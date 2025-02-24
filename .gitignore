@@ -1,0 +1,51 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.0
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+*.vsidx
+*.opendb
+
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+*.sln
+*.vcxproj*
+.vs/
+
+*~
+*.swp
+*.swo
+*.tmp
+
+*.log
+
+/bin/
