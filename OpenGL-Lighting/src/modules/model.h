@@ -5,8 +5,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "../shaders/shader.h"
-#include "Mesh.h"
+#include "../../shaders/shader.h"
+#include "mesh.h"
 
 class Model {
 public:

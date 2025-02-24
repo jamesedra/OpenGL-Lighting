@@ -1,7 +1,7 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include "utils.h"
+#include "modules/utils.h"
 
 
 int main()

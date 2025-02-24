@@ -1,5 +1,5 @@
 #include "model.h"
-#include "../stb/stb_image.h"
+#include "../../stb/stb_image.h"
 
 void Model::Draw(Shader& shader)
 {

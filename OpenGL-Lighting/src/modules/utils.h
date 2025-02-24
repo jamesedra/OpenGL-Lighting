@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../stb/stb_image.h"
+#include "../../stb/stb_image.h"
 
 // adjusts the viewport when user resizes it
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
