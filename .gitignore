@@ -37,8 +37,8 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-*.sln
-*.vcxproj*
+#*.sln
+#*.vcxproj*
 .vs/
 
 *~
