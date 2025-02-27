@@ -74,7 +74,7 @@
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)bin\Intermediate\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>C:\VSLibraries\glfw-3.4\LibInclude\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VSLibraries\glfw-3.4\LibInclude;C:\Users\dedralin\VSLibraries\glfw-3.4\lib_includes;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\VSLibraries\glfw-3.4\LibInclude;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
