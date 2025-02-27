@@ -60,8 +60,10 @@ int main()
 	glfwSetWindowUserPointer(window, &camera);
 
 	unsigned int floorVAO = createQuadVAO();
+	unsigned int tex_diff = loadTexture("resources/textures/wood.png", true);
+	unsigned int tex_spec = createDefaultTexture();
 
-	Shader floorShader("shaders/base_vertex.vert", "shaders/red.frag");
+	Shader floorShader("shaders/base_vertex.vert", "shaders/blinn_phong.frag");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -87,6 +89,20 @@ int main()
 		floorShader.setMat4("projection", projection);
 		floorShader.setMat4("view", view);
 		floorShader.setMat4("model", model);
+
+		floorShader.setVec3("dirLight.direction", glm::vec3(-0.2f, 10.0f, -0.3f));
+		floorShader.setVec3("dirLight.ambient", glm::vec3(0.2f));
+		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
+		floorShader.setVec3("dirLight.specular", 1.0f, 1.0f, 1.0f);
+
+		floorShader.setInt("material.diffuse", 0);
+		floorShader.setInt("material.specular", 1);
+		floorShader.setFloat("material.shininess", 32.0f);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex_diff);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, tex_spec);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
