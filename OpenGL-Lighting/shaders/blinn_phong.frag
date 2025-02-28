@@ -87,11 +87,17 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	vec3 lightDir = light.positionAndConstant.rgb - fragPos;
 	float distance = length(lightDir);
 	lightDir = normalize(lightDir);
- 
+	
 	float diff = max(dot(normal, lightDir), 0.0);
-	vec3 reflectDir = reflect(-lightDir, normal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
- 
+
+	// regular phong
+	// vec3 reflectDir = reflect(-lightDir, normal);
+	// float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+
+	// blinn phong
+	vec3 halfwayDir = normalize(lightDir + viewDir);
+	float spec = pow(max(dot(normal, halfwayDir), 0.0), material.shininess);
+
 	float attenuation = 1.0 / (light.positionAndConstant.a + light.ambientAndLinear.a * distance + light.diffuseAndQuadratic.a * (distance * distance));
  
 	vec3 ambient = light.ambientAndLinear.rgb * vec3(texture(material.diffuse, TexCoords));

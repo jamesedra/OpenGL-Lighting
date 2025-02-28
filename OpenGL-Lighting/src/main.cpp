@@ -10,25 +10,13 @@
 #include "modules/shader.h"
 #include "modules/camera.h"
 #include "modules/framebuffer.h"
+#include "modules/uniformbuffer.h"
+#include "modules/light_types.h"
 
 #include "../stb/stb_image.h"
 
 constexpr int W_WIDTH = 800;
 constexpr int W_HEIGHT = 600;
-
-struct PointLightData {
-	glm::vec4 positionAndConstant;
-	glm::vec4 ambientAndLinear;
-	glm::vec4 diffuseAndQuadratic;
-	glm::vec4 specular;
-};
-
-constexpr int MAX_POINT_LIGHTS = 4;
-
-struct PointLightsBlock {
-	PointLightData pointLights[MAX_POINT_LIGHTS];
-	int numPointLights = 0;
-};
 
 int main()
 {
@@ -79,50 +67,35 @@ int main()
 
 	Shader floorShader("shaders/base_vertex.vert", "shaders/blinn_phong.frag");
 
-	unsigned int uboPointLights;
-	glGenBuffers(1, &uboPointLights);
-	glBindBuffer(GL_UNIFORM_BUFFER, uboPointLights);
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(PointLightsBlock), NULL, GL_STATIC_DRAW);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
+	UniformBuffer uboPointLights(sizeof(PointLightsBlock), GL_STATIC_DRAW);
 
 	unsigned int bindingPoint = 0;
 	unsigned int uniformBlockIndex = glGetUniformBlockIndex(floorShader.ID, "PointLights");
 	glUniformBlockBinding(floorShader.ID, uniformBlockIndex, bindingPoint);
-	glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, uboPointLights);
+	uboPointLights.bindBufferBase(bindingPoint);
 
 	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.0f, 0.2f, 0.0f),
-		glm::vec3(5.0f, 0.2f, 5.0f),
-		glm::vec3(-5.0f, 0.2f, 5.0f),
-		glm::vec3(5.0f, 0.2f, -5.0f),
+		glm::vec3(0.0f, 0.1f, 0.0f),
+		glm::vec3(5.0f, 0.1f, 5.0f),
+		glm::vec3(-5.0f, 0.1f, 5.0f),
+		glm::vec3(5.0f, 0.1f, -5.0f),
 	};
 
 	std::vector<PointLightData> pointLights;
-
 	float constant = 1.0f;
 	float linear = 0.22f;
 	float quadratic = 0.20f;
 	glm::vec3 diffuse = glm::vec3(0.5f);
-	glm::vec3 specular = glm::vec3(0.5f);
+	glm::vec3 specular = glm::vec3(1.0f);
 	glm::vec3 ambient = glm::vec3(0.5f);
 
 	for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
 		pointLights.push_back({ glm::vec4(pointLightPositions[i], constant), glm::vec4(ambient, linear), glm::vec4(diffuse, quadratic), glm::vec4(specular, 1.0) });
 	}
 
-	PointLightsBlock lightsBlock;
-	lightsBlock.numPointLights = static_cast<int>(pointLights.size());
+	PointLightsBlock lightsBlock(pointLights);
+	uboPointLights.setData(&lightsBlock, sizeof(PointLightsBlock));
 
-	for (int i = 0; i < lightsBlock.numPointLights && i < MAX_POINT_LIGHTS; i++) {
-		lightsBlock.pointLights[i].positionAndConstant = pointLights[i].positionAndConstant;
-		lightsBlock.pointLights[i].diffuseAndQuadratic = pointLights[i].diffuseAndQuadratic;
-		lightsBlock.pointLights[i].ambientAndLinear = pointLights[i].ambientAndLinear;
-		lightsBlock.pointLights[i].specular = pointLights[i].specular;
-	}
-
-	glBindBuffer(GL_UNIFORM_BUFFER, uboPointLights);
-	glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PointLightsBlock), &lightsBlock);
-	glBindBuffer(GL_UNIFORM_BUFFER, 0);
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -150,8 +123,8 @@ int main()
 		floorShader.setMat4("model", model);
 
 		floorShader.setVec3("dirLight.direction", glm::vec3(0.0f, 1.0f, 0.0f));
-		floorShader.setVec3("dirLight.ambient", glm::vec3(0.2f));
-		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.2f));
+		floorShader.setVec3("dirLight.ambient", glm::vec3(0.1f));
+		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.1f));
 		floorShader.setVec3("dirLight.specular", glm::vec3(1.0f));
 
 		floorShader.setInt("material.diffuse", 0);
