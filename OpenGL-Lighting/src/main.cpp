@@ -5,13 +5,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "modules/Model.h"
+#include "modules/model.h"
 #include "modules/utils.h"
 #include "modules/shader.h"
 #include "modules/camera.h"
 #include "modules/framebuffer.h"
 #include "modules/uniformbuffer.h"
 #include "modules/light_types.h"
+#include "modules/texture.h"
 
 #include "../stb/stb_image.h"
 

@@ -142,59 +142,49 @@ unsigned int loadCubemap(std::vector<std::string> faces)
 
 unsigned int createDefaultTexture()
 {
-	unsigned int whiteTexture;
-	glGenTextures(1, &whiteTexture);
-	glBindTexture(GL_TEXTURE_2D, whiteTexture);
 	unsigned char whitePixel[4] = { 255, 255, 255, 255 };
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, whitePixel);
+	Texture whiteTex(1, 1, GL_RGBA, GL_RGBA, whitePixel);
+	whiteTex.setTexFilter(GL_LINEAR);
 
-	return whiteTexture;
+	return whiteTex.id;
 }
 
 unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpace space)
 {
-	unsigned int tex;
-	glGenTextures(1, &tex);
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	stbi_set_flip_vertically_on_load(true);
 
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
-	if (data)
-	{
-		GLenum baseFormat = GL_RGB;
-		if (nrChannels == 1)
-			baseFormat = GL_RED;
-		else if (nrChannels == 3)
-			baseFormat = GL_RGB;
-		else if (nrChannels == 4)
-			baseFormat = GL_RGBA;
-
-		GLenum internalFormat = baseFormat;
-
-		if (space == TextureColorSpace::sRGB) {
-			if (baseFormat == GL_RGB)
-				internalFormat = GL_SRGB;
-			else if (baseFormat == GL_RGBA)
-				internalFormat = GL_SRGB_ALPHA;
-		}
-
-		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, baseFormat, GL_UNSIGNED_BYTE, data);
-		glGenerateMipmap(GL_TEXTURE_2D);
-	}
-	else
+	if (!data)
 	{
 		std::cout << "Failed to load texture" << std::endl;
+		stbi_image_free(data);
+		return 0;
 	}
+	
+	GLenum baseFormat = GL_RGB;
+	if (nrChannels == 1)
+		baseFormat = GL_RED;
+	else if (nrChannels == 3)
+		baseFormat = GL_RGB;
+	else if (nrChannels == 4)
+		baseFormat = GL_RGBA;
+
+	GLenum internalFormat = baseFormat;
+
+	if (space == TextureColorSpace::sRGB) {
+		if (baseFormat == GL_RGB)
+			internalFormat = GL_SRGB;
+		else if (baseFormat == GL_RGBA)
+			internalFormat = GL_SRGB_ALPHA;
+	}
+
+	Texture tex(width, height, internalFormat, baseFormat, GL_LINEAR, GL_REPEAT, data);
+	tex.genMipMap();
+
 	stbi_image_free(data);
 
-	return tex;
+	return tex.id;
 }
 
 unsigned int createCubeVAO()
