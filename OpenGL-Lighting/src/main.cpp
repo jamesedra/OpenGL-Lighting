@@ -15,8 +15,8 @@
 
 #include "../stb/stb_image.h"
 
-constexpr int W_WIDTH = 800;
-constexpr int W_HEIGHT = 600;
+constexpr int W_WIDTH = 1200;
+constexpr int W_HEIGHT = 800;
 
 int main()
 {
@@ -105,22 +105,13 @@ int main()
 
 		// render commands
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		glm::mat4 projection = glm::perspective(glm::radians(camera.getFOV()), (float)W_WIDTH / (float)W_HEIGHT, 0.1f, 1000.f);
-		glm::mat4 view = glm::mat4(1.0f);
-		glm::vec3 cameraPos = camera.getCameraPos();
-		view = glm::lookAt(cameraPos, cameraPos + camera.getCameraFront(), camera.getCameraUp());
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 
 		floorShader.use();
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(10.0f, 5.0f, 10.0f));
-		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-		floorShader.setMat4("projection", projection);
-		floorShader.setMat4("view", view);
-		floorShader.setMat4("model", model);
+		floorShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
+		floorShader.setMat4("view", camera.getViewMatrix());
+		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), 
+				glm::vec3(10.0f, 5.0f, 10.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		floorShader.setVec3("dirLight.direction", glm::vec3(0.0f, 1.0f, 0.0f));
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.1f));
@@ -131,10 +122,9 @@ int main()
 		floorShader.setInt("material.specular", 1);
 		floorShader.setFloat("material.shininess", 32.0f);
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, tex_diff);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, tex_spec);
+		std::vector<unsigned int> textureIDs = { tex_diff, tex_spec };
+		bindTextures(textureIDs);
+
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 

@@ -26,6 +26,8 @@ public:
 
 
     // Getter methods
+    glm::mat4 getProjectionMatrix(float width, float height, float near, float far);
+    glm::mat4 getViewMatrix();
     glm::vec3 getCameraPos() const;
     glm::vec3 getCameraFront() const;
     glm::vec3 getCameraUp() const;

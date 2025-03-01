@@ -25,3 +25,8 @@ unsigned int loadTexture(const char* path, bool flipVertically);
 unsigned int createCubeVAO();
 unsigned int createQuadVAO();
 unsigned int createFrameVAO();
+
+// model matrix helper
+glm::mat4 computeModelMatrix(const glm::vec3& position, const glm::vec3& scale, float angleDegrees, const glm::vec3& rotationAxis);
+
+void bindTextures(const std::vector<unsigned int>& textures, GLenum textureTarget = GL_TEXTURE_2D, unsigned int startUnit = GL_TEXTURE0);

@@ -325,3 +325,21 @@ unsigned int createFrameVAO()
 
 	return quadVAO;
 }
+
+glm::mat4 computeModelMatrix(const glm::vec3& position, const glm::vec3& scale, float angleDegrees, const glm::vec3& rotationAxis)
+{
+	glm::mat4 model = glm::mat4(1.0f);
+	model = glm::translate(model, position);
+	model = glm::scale(model, scale);
+	model = glm::rotate(model, glm::radians(angleDegrees), rotationAxis);
+	return model;
+}
+
+void bindTextures(const std::vector<unsigned int>& textures, GLenum textureTarget, unsigned int startUnit)
+{
+	for (size_t i = 0; i < textures.size(); ++i)
+	{
+		glActiveTexture(startUnit + i);
+		glBindTexture(textureTarget, textures[i]);
+	}
+}

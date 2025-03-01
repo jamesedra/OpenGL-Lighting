@@ -28,6 +28,18 @@ void Camera::setFOV(const float fov)
 }
 
 // Getter implementations
+glm::mat4 Camera::getProjectionMatrix(float width, float height, float near, float far)
+{
+    return glm::perspective(glm::radians(fov), width / height, near, far);
+}
+
+glm::mat4 Camera::getViewMatrix()
+{
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    return view;
+}
+
 glm::vec3 Camera::getCameraPos() const
 {
     return cameraPos;
