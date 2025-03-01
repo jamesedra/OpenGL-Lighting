@@ -153,7 +153,7 @@ unsigned int createDefaultTexture()
 	return whiteTexture;
 }
 
-unsigned int loadTexture(const char* path, bool flipVertically)
+unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpace space)
 {
 	unsigned int tex;
 	glGenTextures(1, &tex);
@@ -168,15 +168,24 @@ unsigned int loadTexture(const char* path, bool flipVertically)
 	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
 	if (data)
 	{
-		GLenum format = GL_RGB;
+		GLenum baseFormat = GL_RGB;
 		if (nrChannels == 1)
-			format = GL_RED;
+			baseFormat = GL_RED;
 		else if (nrChannels == 3)
-			format = GL_RGB;
+			baseFormat = GL_RGB;
 		else if (nrChannels == 4)
-			format = GL_RGBA;
+			baseFormat = GL_RGBA;
 
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		GLenum internalFormat = baseFormat;
+
+		if (space == TextureColorSpace::sRGB) {
+			if (baseFormat == GL_RGB)
+				internalFormat = GL_SRGB;
+			else if (baseFormat == GL_RGBA)
+				internalFormat = GL_SRGB_ALPHA;
+		}
+
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, baseFormat, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	else

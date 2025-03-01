@@ -66,6 +66,9 @@ void main () {
 	}
 	//result += CalcSpotLight(spotLight, norm, FragPos, viewDir); // not implemented yet
  
+	// gamma correction
+	float gamma = 2.2;
+	result = pow(result, vec3(1.0/gamma));
 	FragColor = vec4(result, 1.0);
 }
  

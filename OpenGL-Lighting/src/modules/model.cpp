@@ -103,7 +103,13 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 		}
 		if (!skip) {
 			Texture texture;
-			texture.id = TextureFromFile(str.C_Str(), directory);
+
+			TextureColorSpace colorSpace = TextureColorSpace::Linear;
+			if (type == aiTextureType_DIFFUSE || type == aiTextureType_AMBIENT) {
+				colorSpace = TextureColorSpace::sRGB;
+			}
+
+			texture.id = TextureFromFile(str.C_Str(), directory, colorSpace);
 			texture.type = typeName;
 			texture.path = str.C_Str();
 			textures.push_back(texture);
@@ -114,7 +120,7 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial* mat, aiTextureType 
 }
 
 
-unsigned int Model::TextureFromFile(const char* path, const std::string& directory) {
+unsigned int Model::TextureFromFile(const char* path, const std::string& directory, TextureColorSpace space) {
 	std::string filename = std::string(path);
 	filename = directory + '/' + filename;
 
@@ -126,13 +132,21 @@ unsigned int Model::TextureFromFile(const char* path, const std::string& directo
 	if (data)
 	{
 		// check count of nrComponents from the data
-		GLenum format;
-		if (nrComponents == 1) format = GL_RED;
-		else if (nrComponents == 3) format = GL_RGB;
-		else if (nrComponents == 4) format = GL_RGBA;
+		GLenum baseFormat;
+		if (nrComponents == 1) baseFormat = GL_RED;
+		else if (nrComponents == 3) baseFormat = GL_RGB;
+		else if (nrComponents == 4) baseFormat = GL_RGBA;
+
+		GLenum internalFormat = baseFormat;
+		if (space == TextureColorSpace::sRGB) {
+			if (baseFormat == GL_RGB)
+				internalFormat = GL_SRGB;
+			else if (baseFormat == GL_RGBA)
+				internalFormat = GL_SRGB_ALPHA;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, textureID);
-		glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+		glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, baseFormat, GL_UNSIGNED_BYTE, data);
 		glGenerateMipmap(GL_TEXTURE_2D);
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);

@@ -9,6 +9,11 @@
 
 #include "../../stb/stb_image.h"
 
+enum class TextureColorSpace {
+	Linear,
+	sRGB
+};
+
 // adjusts the viewport when user resizes it
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
@@ -19,7 +24,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 unsigned int loadCubemap(std::vector<std::string> faces);
 unsigned int createDefaultTexture();
-unsigned int loadTexture(const char* path, bool flipVertically);
+unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpace space = TextureColorSpace::Linear);
 
 // vertex array object references
 unsigned int createCubeVAO();
