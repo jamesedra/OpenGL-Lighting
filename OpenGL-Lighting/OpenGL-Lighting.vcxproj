@@ -162,6 +162,11 @@
     <ClInclude Include="stb\stb_image.h" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="resources\objects\backpack\ao.jpg" />
+    <Image Include="resources\objects\backpack\diffuse.jpg" />
+    <Image Include="resources\objects\backpack\normal.png" />
+    <Image Include="resources\objects\backpack\roughness.jpg" />
+    <Image Include="resources\objects\backpack\specular.jpg" />
     <Image Include="resources\skybox\back.jpg" />
     <Image Include="resources\skybox\bottom.jpg" />
     <Image Include="resources\skybox\front.jpg" />
@@ -178,9 +183,19 @@
     <Image Include="resources\textures\wood.png" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="resources\objects\backpack\backpack.mtl" />
+    <None Include="shaders\base_lit.vert" />
     <None Include="shaders\base_vertex.vert" />
     <None Include="shaders\blinn_phong.frag" />
+    <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
+    <None Include="shaders\empty.frag" />
+    <None Include="shaders\framebuffer_quad.vert" />
     <None Include="shaders\red.frag" />
+    <None Include="shaders\simple_depth.frag" />
+    <None Include="shaders\simple_depth.vert" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="resources\objects\backpack\source_attribution.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

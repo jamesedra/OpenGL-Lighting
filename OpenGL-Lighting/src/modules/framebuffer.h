@@ -19,7 +19,42 @@ private:
 public:
 	unsigned int FBO;
 
-	// base framebuffer constructor
+	Framebuffer(int width, int height) : width(width), height(height) {
+		glGenFramebuffers(1, &FBO);
+		unbind();
+	}
+
+	Framebuffer(int width, int height, const Texture& tex, GLenum attachment) : width(width), height(height) {
+		glGenFramebuffers(1, &FBO);
+		attachTexture(tex, attachment);
+	}
+
+	void attachTexture(const Texture& tex, GLenum attachment) {
+		bind();
+		texture = tex.id;
+		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture, 0);
+		unbind();
+	}
+
+	void attachRenderbuffer(GLenum attachment, GLenum internalFormat) {
+		bind();
+		glGenRenderbuffers(1, &rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rbo);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		unbind();
+	}
+
+	bool isComplete() {
+		bind();
+		bool complete = (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+		unbind();
+		return complete;
+	}
+
+	/*
+	// base framebuffer constructor. deprecated
 	Framebuffer(int width, int height) : width(width), height(height)
 	{
 		glGenFramebuffers(1, &FBO);
@@ -50,6 +85,9 @@ public:
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
+	*/
+
+	// to be refactored
 	Framebuffer(int width, int height, int samples) : width(width), height(height), samples(samples)
 	{
 		glGenFramebuffers(1, &FBO);

@@ -16,8 +16,8 @@
 
 #include "../stb/stb_image.h"
 
-constexpr int W_WIDTH = 1200;
-constexpr int W_HEIGHT = 800;
+constexpr int W_WIDTH = 800;
+constexpr int W_HEIGHT = 600;
 
 int main()
 {
@@ -67,13 +67,17 @@ int main()
 	unsigned int tex_diff = loadTexture("resources/textures/wood.png", true, TextureColorSpace::sRGB);
 	unsigned int tex_spec = createDefaultTexture();
 
-	Shader floorShader("shaders/base_vertex.vert", "shaders/blinn_phong.frag");
+	// Shader section
+	Shader shader("shaders/base_lit.vert", "shaders/blinn_phong.frag");
+	Shader depthShader("shaders/simple_depth.vert", "shaders/empty.frag");
+	Shader ppShader("shaders/framebuffer_quad.vert", "shaders/simple_depth.frag");
 
+	/*
 	UniformBuffer uboPointLights(sizeof(PointLightsBlock), GL_STATIC_DRAW);
 
 	unsigned int bindingPoint = 0;
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(floorShader.ID, "PointLights");
-	glUniformBlockBinding(floorShader.ID, uniformBlockIndex, bindingPoint);
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "PointLights");
+	glUniformBlockBinding(shader.ID, uniformBlockIndex, bindingPoint);
 	uboPointLights.bindBufferBase(bindingPoint);
 
 	glm::vec3 pointLightPositions[] = {
@@ -98,10 +102,32 @@ int main()
 	PointLightsBlock lightsBlock(pointLights);
 	uboPointLights.setData(&lightsBlock, sizeof(PointLightsBlock));
 
-	// prepare to bind textures
-	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec };
+	*/
 
 	Model object("resources/objects/backpack/backpack.obj");
+
+	// shadow mapping
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	Texture depthTexture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_NEAREST, GL_REPEAT);
+	Framebuffer depthFBO(SHADOW_WIDTH, SHADOW_HEIGHT, depthTexture, GL_DEPTH_ATTACHMENT);
+	if (!depthFBO.isComplete()) {
+		std::cout << "Frame buffer incomplete" << std::endl;
+		return -1;
+	}
+	// no need for color buffers. set both draw and read buffer to none
+	depthFBO.bind();
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	depthFBO.unbind();
+
+	unsigned int frame = createFrameVAO();
+	ppShader.use();
+	ppShader.setInt("depthMap", 0);
+
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+
+	// prepare to bind textures
+	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, depthTexture.id };
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -110,32 +136,70 @@ int main()
 		processInput(window);
 
 		// render commands
+		
+		// first pass: render to depth map
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		float near_plane = 1.0f, far_plane = 7.5f;
+		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+		depthShader.use();
+		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(10.0f, 5.0f, 10.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		
+		depthFBO.bind();
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glBindVertexArray(floorVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
+			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		object.Draw(depthShader);
+		depthFBO.unbind();
+
+		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		floorShader.use();
-		floorShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
-		floorShader.setMat4("view", camera.getViewMatrix());
-		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), 
-				glm::vec3(10.0f, 5.0f, 10.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		/* for depth debugging only 
+		ppShader.use();
+		glBindVertexArray(frame);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, depthTexture.id);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glBindVertexArray(0);
+		// */
 
-		floorShader.setVec3("dirLight.direction", glm::vec3(0.0f, 1.0f, 0.0f));
-		floorShader.setVec3("dirLight.ambient", glm::vec3(0.1f));
-		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.1f));
-		floorShader.setVec3("dirLight.specular", glm::vec3(1.0f));
+		// second pass
+		shader.use();
+		shader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
+		shader.setMat4("view", camera.getViewMatrix());
+		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), 
+				glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
-		floorShader.setInt("material.diffuse", 0);
-		floorShader.setInt("material.specular", 1);
-		floorShader.setFloat("material.shininess", 32.0f);
+		shader.setVec3("dirLight.direction", glm::normalize(-lightPos));
+		shader.setVec3("dirLight.position", lightPos);
+		shader.setVec3("dirLight.ambient", glm::vec3(0.05f));
+		shader.setVec3("dirLight.diffuse", glm::vec3(1.0f));
+		shader.setVec3("dirLight.specular", glm::vec3(1.0f));
 
+		shader.setInt("material.diffuse", 0);
+		shader.setInt("material.specular", 1);
+		shader.setInt("shadowMap", 2);
+		shader.setFloat("material.shininess", 64.0f);
+
+		shader.setVec3("viewPos", camera.getCameraPos());
 		bindTextures(textureIDs);
 
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
+		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.0f, 0.0f),
 			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		object.Draw(floorShader);
+		object.Draw(shader);
 
 		// checks events and swap buffers
 		glfwPollEvents();
