@@ -16,8 +16,8 @@
 
 #include "../stb/stb_image.h"
 
-constexpr int W_WIDTH = 800;
-constexpr int W_HEIGHT = 600;
+constexpr int W_WIDTH = 1600;
+constexpr int W_HEIGHT = 1200;
 
 int main()
 {
@@ -49,6 +49,7 @@ int main()
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
 	// glEnable(GL_FRAMEBUFFER_SRGB);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
@@ -108,7 +109,14 @@ int main()
 
 	// shadow mapping
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
-	Texture depthTexture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_NEAREST, GL_REPEAT);
+	Texture depthTexture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
+	depthTexture.setTexFilter(GL_NEAREST);
+	depthTexture.setTexWrap(GL_CLAMP_TO_BORDER);
+	depthTexture.bind();
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	depthTexture.unbind();
+
 	Framebuffer depthFBO(SHADOW_WIDTH, SHADOW_HEIGHT, depthTexture, GL_DEPTH_ATTACHMENT);
 	if (!depthFBO.isComplete()) {
 		std::cout << "Frame buffer incomplete" << std::endl;
@@ -144,7 +152,8 @@ int main()
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
+		
+		glCullFace(GL_FRONT);
 		depthShader.use();
 		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
@@ -158,6 +167,7 @@ int main()
 			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		object.Draw(depthShader);
 		depthFBO.unbind();
+		glCullFace(GL_BACK);
 
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -197,7 +207,7 @@ int main()
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.0f, 0.0f),
+		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 1.7f, 0.0f),
 			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		object.Draw(shader);
 
