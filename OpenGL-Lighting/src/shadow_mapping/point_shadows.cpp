@@ -5,16 +5,16 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "modules/model.h"
-#include "modules/utils.h"
-#include "modules/shader.h"
-#include "modules/camera.h"
-#include "modules/framebuffer.h"
-#include "modules/uniformbuffer.h"
-#include "modules/light_types.h"
-#include "modules/texture.h"
+#include "../modules/model.h"
+#include "../modules/utils.h"
+#include "../modules/shader.h"
+#include "../modules/camera.h"
+#include "../modules/framebuffer.h"
+#include "../modules/uniformbuffer.h"
+#include "../modules/light_types.h"
+#include "../modules/texture.h"
 
-#include "../stb/stb_image.h"
+#include "../../stb/stb_image.h"
 
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
@@ -73,38 +73,7 @@ int main()
 	Shader depthShader("shaders/simple_depth.vert", "shaders/empty.frag");
 	Shader ppShader("shaders/framebuffer_quad.vert", "shaders/simple_depth.frag");
 
-	/*
-	UniformBuffer uboPointLights(sizeof(PointLightsBlock), GL_STATIC_DRAW);
-
-	unsigned int bindingPoint = 0;
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "PointLights");
-	glUniformBlockBinding(shader.ID, uniformBlockIndex, bindingPoint);
-	uboPointLights.bindBufferBase(bindingPoint);
-
-	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.0f, 1.5f, 0.25f),
-		glm::vec3(5.0f, 0.1f, 5.0f),
-		glm::vec3(-5.0f, 0.1f, 5.0f),
-		glm::vec3(5.0f, 0.1f, -5.0f),
-	};
-
-	std::vector<PointLightData> pointLights;
-	float constant = 1.0f;
-	float linear = 0.7f;
-	float quadratic = 1.8f;
-	glm::vec3 diffuse = glm::vec3(0.7f);
-	glm::vec3 specular = glm::vec3(1.0f);
-	glm::vec3 ambient = glm::vec3(0.7f);
-
-	for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
-		pointLights.push_back({ glm::vec4(pointLightPositions[i], constant), glm::vec4(ambient, linear), glm::vec4(diffuse, quadratic), glm::vec4(specular, 1.0) });
-	}
-
-	PointLightsBlock lightsBlock(pointLights);
-	uboPointLights.setData(&lightsBlock, sizeof(PointLightsBlock));
-
-	*/
-
+	
 	Model object("resources/objects/backpack/backpack.obj");
 
 	// shadow mapping
@@ -118,7 +87,8 @@ int main()
 	depthTexture.unbind();
 
 	Framebuffer depthFBO(SHADOW_WIDTH, SHADOW_HEIGHT, depthTexture, GL_DEPTH_ATTACHMENT);
-	if (!depthFBO.isComplete()) {
+	if (!depthFBO.isComplete())
+	{
 		std::cout << "Frame buffer incomplete" << std::endl;
 		return -1;
 	}
@@ -144,7 +114,7 @@ int main()
 		processInput(window);
 
 		// render commands
-		
+
 		// first pass: render to depth map
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -152,13 +122,13 @@ int main()
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-		
+
 		glCullFace(GL_FRONT);
 		depthShader.use();
 		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 5.0f, 10.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		
+
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
@@ -173,8 +143,10 @@ int main()
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		/* for depth debugging only 
+		/* for depth debugging only
 		ppShader.use();
+		ppShader.setFloat("near_plane", near_plane);
+		ppShader.setFloat("far_plane", far_plane);
 		glBindVertexArray(frame);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, depthTexture.id);
@@ -186,8 +158,8 @@ int main()
 		shader.use();
 		shader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
 		shader.setMat4("view", camera.getViewMatrix());
-		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), 
-				glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 
 		shader.setVec3("dirLight.direction", glm::normalize(-lightPos));
