@@ -72,11 +72,10 @@ int main()
 	Shader shader("shaders/base_lit.vert", "shaders/blinn_phong.frag");
 	Shader depthShader("shaders/simple_depth.vert", "shaders/empty.frag");
 	Shader ppShader("shaders/framebuffer_quad.vert", "shaders/simple_depth.frag");
-
 	
 	Model object("resources/objects/backpack/backpack.obj");
 
-	// shadow mapping
+	// directional shadow mapping
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 	Texture depthTexture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
 	depthTexture.setTexFilter(GL_NEAREST);
@@ -98,11 +97,49 @@ int main()
 	glReadBuffer(GL_NONE);
 	depthFBO.unbind();
 
+	// point shadow mapping
+	unsigned int depthCubemap;
+	glGenTextures(1, &depthCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; ++i) {
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	unsigned int depthCubeFBO;
+	glGenFramebuffers(1, &depthCubeFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	float near = 1.0f;
+	float far = 25.0f;
+	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near, far);
+
+	// prep view matrix for each cube face
+	std::vector<glm::mat4> shadowTransforms;
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // +X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0,0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // -X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0,  1.0))); // +Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0,-1.0, 0.0), glm::vec3(0.0, 0.0, -1.0))); // -Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))); // +Z
+	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0,-1.0), glm::vec3(0.0, -1.0, 0.0))); // -Z
+
+
+
+
+
 	unsigned int frame = createFrameVAO();
 	ppShader.use();
 	ppShader.setInt("depthMap", 0);
-
-	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 
 	// prepare to bind textures
 	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, depthTexture.id };
@@ -118,7 +155,7 @@ int main()
 		// first pass: render to depth map
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		float near_plane = 1.0f, far_plane = 7.5f;
+		float near_plane = 1.0f, far_plane = 27.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;

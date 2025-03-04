@@ -26,13 +26,19 @@ public:
 
 	Framebuffer(int width, int height, const Texture& tex, GLenum attachment) : width(width), height(height) {
 		glGenFramebuffers(1, &FBO);
-		attachTexture(tex, attachment);
+		attachTexture2D(tex, attachment);
 	}
 
-	void attachTexture(const Texture& tex, GLenum attachment) {
+	void attachTexture2D(const Texture& tex, GLenum attachment) {
 		bind();
 		texture = tex.id;
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture, 0);
+		unbind();
+	}
+
+	void attachTexture(GLenum attachment, unsigned int textureID) {
+		bind();
+		glFramebufferTexture(GL_FRAMEBUFFER, attachment, textureID, 0);
 		unbind();
 	}
 
