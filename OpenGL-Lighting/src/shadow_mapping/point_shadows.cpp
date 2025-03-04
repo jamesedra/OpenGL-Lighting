@@ -70,8 +70,40 @@ int main()
 
 	// Shader section
 	Shader shader("shaders/base_lit.vert", "shaders/blinn_phong.frag");
-	Shader depthShader("shaders/simple_depth.vert", "shaders/empty.frag");
+	Shader depthDirShader("shaders/simple_depth.vert", "shaders/empty.frag");
+	Shader depthPointShader("shaders/simple_depth.vert", "shaders/simple_depth.geom", "shaders/linear_depth.frag");
 	Shader ppShader("shaders/framebuffer_quad.vert", "shaders/simple_depth.frag");
+
+
+	// point lights
+	UniformBuffer uboPointLights(sizeof(PointLightsBlock), GL_STATIC_DRAW);
+
+	unsigned int bindingPoint = 0;
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(shader.ID, "PointLights");
+	glUniformBlockBinding(shader.ID, uniformBlockIndex, bindingPoint);
+	uboPointLights.bindBufferBase(bindingPoint);
+
+	glm::vec3 pointLightPositions[] = {
+		glm::vec3(0.0f, 1.5f, 0.25f),
+		// glm::vec3(5.0f, 1.5f, 5.0f),
+		// glm::vec3(-5.0f, 1.5f, 5.0f),
+		// glm::vec3(5.0f, 1.5f, -5.0f),
+	};
+
+	std::vector<PointLightData> pointLights;
+	float constant = 1.0f;
+	float linear = 0.7f;
+	float quadratic = 1.8f;
+	glm::vec3 diffuse = glm::vec3(0.7f);
+	glm::vec3 specular = glm::vec3(1.0f);
+	glm::vec3 ambient = glm::vec3(0.2f);
+
+	for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
+		pointLights.push_back({ glm::vec4(pointLightPositions[i], constant), glm::vec4(ambient, linear), glm::vec4(diffuse, quadratic), glm::vec4(specular, 1.0) });
+	}
+
+	PointLightsBlock lightsBlock(pointLights);
+	uboPointLights.setData(&lightsBlock, sizeof(PointLightsBlock));
 	
 	Model object("resources/objects/backpack/backpack.obj");
 
@@ -113,6 +145,7 @@ int main()
 
 	unsigned int depthCubeFBO;
 	glGenFramebuffers(1, &depthCubeFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
@@ -134,9 +167,6 @@ int main()
 	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0,-1.0), glm::vec3(0.0, -1.0, 0.0))); // -Z
 
 
-
-
-
 	unsigned int frame = createFrameVAO();
 	ppShader.use();
 	ppShader.setInt("depthMap", 0);
@@ -152,7 +182,7 @@ int main()
 
 		// render commands
 
-		// first pass: render to depth map
+		// first pass: render to depth map (directinal shadows)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		float near_plane = 1.0f, far_plane = 27.5f;
@@ -161,20 +191,39 @@ int main()
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		glCullFace(GL_FRONT);
-		depthShader.use();
-		depthShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+		depthDirShader.use();
+		depthDirShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 5.0f, 10.0f), 90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		depthShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
+		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
 			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		object.Draw(depthShader);
+		object.Draw(depthDirShader);
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
+
+		// render depth map (point shadows)
+		depthPointShader.use();
+		depthPointShader.setMat4("lightSpaceMatrix", glm::mat4(1.0f)); // no need for light space calculations
+
+		for (unsigned int i = 0; i < 6; ++i) {
+			depthPointShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
+		}
+		depthPointShader.setFloat("far_plane", far);
+
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glBindVertexArray(floorVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		depthPointShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
+			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		object.Draw(depthPointShader);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -208,10 +257,16 @@ int main()
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
 		shader.setInt("shadowMap", 2);
-		shader.setFloat("material.shininess", 64.0f);
+		shader.setInt("shadowCubeMap", 3);
+		shader.setFloat("material.shininess", 32.0f);
 
 		shader.setVec3("viewPos", camera.getCameraPos());
+
+		shader.setFloat("far_plane", far);
 		bindTextures(textureIDs);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
 
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);

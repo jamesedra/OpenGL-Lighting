@@ -191,8 +191,10 @@
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
     <None Include="shaders\empty.frag" />
     <None Include="shaders\framebuffer_quad.vert" />
+    <None Include="shaders\linear_depth.frag" />
     <None Include="shaders\red.frag" />
     <None Include="shaders\simple_depth.frag" />
+    <None Include="shaders\simple_depth.geom" />
     <None Include="shaders\simple_depth.vert" />
   </ItemGroup>
   <ItemGroup>

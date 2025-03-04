@@ -163,6 +163,8 @@
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
     <None Include="resources\objects\backpack\backpack.mtl" />
+    <None Include="shaders\simple_depth.geom" />
+    <None Include="shaders\linear_depth.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
