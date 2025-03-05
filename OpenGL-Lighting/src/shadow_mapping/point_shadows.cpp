@@ -92,11 +92,11 @@ int main()
 
 	std::vector<PointLightData> pointLights;
 	float constant = 1.0f;
-	float linear = 0.2f;
-	float quadratic = 0.22f;
+	float linear = 0.02f;
+	float quadratic = 0.045f;
 	glm::vec3 diffuse = glm::vec3(0.7f);
 	glm::vec3 specular = glm::vec3(1.0f);
-	glm::vec3 ambient = glm::vec3(0.2f);
+	glm::vec3 ambient = glm::vec3(0.5f);
 
 	for (int i = 0; i < sizeof(pointLightPositions) / sizeof(glm::vec3); i++) {
 		pointLights.push_back({ glm::vec4(pointLightPositions[i], constant), glm::vec4(ambient, linear), glm::vec4(diffuse, quadratic), glm::vec4(specular, 1.0) });
@@ -150,7 +150,7 @@ int main()
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	// std::cout << "depthCubemap = " << depthCubemap << std::endl;
-	// glBindTexture(GL_TEXTURE_CUBE_MAP, 0); 
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0); 
 	// for some reason, unbinding the cube does not produce shadow lights. I tried checking collisions between overriding texture ids but there's nothing. :(
 
 
@@ -245,7 +245,7 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		glBindVertexArray(0);
 		// */
-
+		
 		// second pass
 		shader.use();
 		
@@ -275,8 +275,8 @@ int main()
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
-		shader.setInt("shadowCubeMap", 3);
-
+		shader.setInt("shadowCubemap", 3);
+		
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
