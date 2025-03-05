@@ -185,7 +185,7 @@ int main()
 
 		// render commands
 
-		// first pass: render to depth map (directinal shadows)
+		// first pass: render to depth map (directional shadows)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		/*
@@ -232,7 +232,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		/* for depth debugging only
@@ -248,6 +248,7 @@ int main()
 
 		// second pass
 		shader.use();
+		
 		shader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
 		shader.setMat4("view", camera.getViewMatrix());
 		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
