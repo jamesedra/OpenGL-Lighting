@@ -56,9 +56,9 @@ void main () {
  
 	vec3 result = vec3(0.0); //CalcDirLight(dirLight, norm, viewDir);
  
-	for (int i = 0; i < numPointLights; i++) {
-		result += CalcPointLight(pointLights[i], norm, fs_in.FragPos, viewDir);
-	}
+	// for (int i = 0; i < numPointLights; i++) {
+		result += CalcPointLight(pointLights[0], norm, fs_in.FragPos, viewDir);
+	// }
  
 	// gamma correction
 	float gamma = 2.2;
@@ -105,9 +105,11 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-	return vec3(shadow);
-	// return ambient + specular + diffuse;
-	return (ambient + (1.0 - shadow) * (diffuse + specular));
+
+	return vec3(shadow); // this works
+	//return ambient + specular + diffuse; // this works
+	return ambient + (1.0 - shadow) * (diffuse + specular); // this doesn't work
+	return ambient * shadow; // this doesn't work
 }
 
 float ShadowDirCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir)

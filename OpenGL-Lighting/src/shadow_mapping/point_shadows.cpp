@@ -84,7 +84,7 @@ int main()
 	uboPointLights.bindBufferBase(bindingPoint);
 
 	glm::vec3 pointLightPositions[] = {
-		glm::vec3(0.0f, 1.5f, 0.25f),
+		glm::vec3(2.0f, 1.5f, 2.25f),
 		// glm::vec3(5.0f, 1.5f, 5.0f),
 		// glm::vec3(-5.0f, 1.5f, 5.0f),
 		// glm::vec3(5.0f, 1.5f, -5.0f),
@@ -92,8 +92,8 @@ int main()
 
 	std::vector<PointLightData> pointLights;
 	float constant = 1.0f;
-	float linear = 0.7f;
-	float quadratic = 1.8f;
+	float linear = 0.2f;
+	float quadratic = 0.22f;
 	glm::vec3 diffuse = glm::vec3(0.7f);
 	glm::vec3 specular = glm::vec3(1.0f);
 	glm::vec3 ambient = glm::vec3(0.2f);
@@ -129,6 +129,8 @@ int main()
 	glReadBuffer(GL_NONE);
 	depthFBO.unbind();
 
+	unsigned int depthCubeFBO;
+	glGenFramebuffers(1, &depthCubeFBO);
 	// point shadow mapping
 	unsigned int depthCubemap;
 	glGenTextures(1, &depthCubemap);
@@ -141,18 +143,19 @@ int main()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	unsigned int depthCubeFBO;
-	glGenFramebuffers(1, &depthCubeFBO);
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	// std::cout << "depthCubemap = " << depthCubemap << std::endl;
+	// glBindTexture(GL_TEXTURE_CUBE_MAP, 0); 
+	// for some reason, unbinding the cube does not produce shadow lights. I tried checking collisions between overriding texture ids but there's nothing. :(
 
 
-	glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	glm::vec3 lightPos(2.0f, 1.5f, 2.25f);
+	//glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
 	float near = 1.0f;
 	float far = 25.0f;
 	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near, far);
@@ -185,6 +188,7 @@ int main()
 		// first pass: render to depth map (directinal shadows)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		/*
 		float near_plane = 1.0f, far_plane = 27.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -205,19 +209,21 @@ int main()
 		object.Draw(depthDirShader);
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
+		*/
 
 		// render depth map (point shadows)
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+		glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
+		glClear(GL_DEPTH_BUFFER_BIT);
+
 		depthPointShader.use();
 		depthPointShader.setMat4("lightSpaceMatrix", glm::mat4(1.0f)); // no need for light space calculations
-
+		depthPointShader.setVec3("lightPos", lightPos);
 		for (unsigned int i = 0; i < 6; ++i) {
 			depthPointShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
 		}
 		depthPointShader.setFloat("far_plane", far);
 
-		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		glBindFramebuffer(GL_FRAMEBUFFER, depthCubeFBO);
-		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		depthPointShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 2.5f, 0.0f),
@@ -226,7 +232,7 @@ int main()
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		/* for depth debugging only
@@ -246,7 +252,8 @@ int main()
 		shader.setMat4("view", camera.getViewMatrix());
 		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		// shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		shader.setMat4("lightSpaceMatrix", glm::mat4(1.0f));
 
 		shader.setVec3("dirLight.direction", glm::normalize(-lightPos));
 		shader.setVec3("dirLight.position", lightPos);
@@ -257,7 +264,7 @@ int main()
 		shader.setInt("material.diffuse", 0);
 		shader.setInt("material.specular", 1);
 		shader.setInt("shadowMap", 2);
-		shader.setInt("shadowCubeMap", 3);
+		
 		shader.setFloat("material.shininess", 32.0f);
 
 		shader.setVec3("viewPos", camera.getCameraPos());
@@ -267,6 +274,7 @@ int main()
 
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+		shader.setInt("shadowCubeMap", 3);
 
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
