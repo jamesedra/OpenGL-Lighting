@@ -26,7 +26,6 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	// create a window object
 	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Normal Mapping", NULL, NULL);
 	if (window == NULL)
 	{
@@ -34,10 +33,7 @@ int main() {
 		glfwTerminate();
 		return -1;
 	}
-	// tell GLFW to make the window the context of the current thread
 	glfwMakeContextCurrent(window);
-
-	// checks if GLAD loader is validated
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
@@ -62,6 +58,10 @@ int main() {
 	);
 	glfwSetWindowUserPointer(window, &camera);
 
+	Shader floorShader("shaders/base_lit.vert", "shaders/red.frag");
+
+	unsigned int floorVAO = createQuadVAO();
+
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -72,7 +72,14 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// render commands
-
+		floorShader.use();
+		floorShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
+		floorShader.setMat4("view", camera.getViewMatrix());
+		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		
+		glBindVertexArray(floorVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// checks events and swap buffers
 		glfwPollEvents();
