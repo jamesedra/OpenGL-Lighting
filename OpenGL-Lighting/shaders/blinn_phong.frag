@@ -54,14 +54,14 @@ void main () {
 	vec3 norm = normalize(fs_in.Normal);
 	vec3 viewDir = normalize(viewPos - fs_in.FragPos);
  
-	// vec3 result = vec3(0.0); //CalcDirLight(dirLight, norm, viewDir);
+	vec3 result = CalcDirLight(dirLight, norm, viewDir);
  
 	// for (int i = 0; i < numPointLights; i++) {
-		vec3 result = CalcPointLight(pointLights[0], norm, fs_in.FragPos, viewDir);
+		// result += CalcPointLight(pointLights[0], norm, fs_in.FragPos, viewDir);
 	// }
 	// gamma correction
-	// float gamma = 2.2;
-    // result = pow(result, vec3(1.0/gamma));
+	float gamma = 2.2;
+    result = pow(result, vec3(1.0/gamma));
 
 	FragColor = vec4(result, 1.0);
 }
@@ -78,7 +78,7 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
 	vec3 ambient = light.ambient * vec3(texture(material.diffuse, fs_in.TexCoords));
 	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, fs_in.TexCoords));
 	vec3 specular = light.specular * spec * vec3(texture(material.specular, fs_in.TexCoords));
-	
+
 	return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
  

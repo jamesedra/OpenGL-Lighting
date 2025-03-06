@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\modules\shader.cpp" />
+    <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
     <ClCompile Include="src\shadow_mapping\directional_shadow.cpp" />
     <ClCompile Include="src\modules\camera.cpp" />
     <ClCompile Include="src\modules\glad.c" />

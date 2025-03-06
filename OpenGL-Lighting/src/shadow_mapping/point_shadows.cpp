@@ -19,7 +19,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int main()
+int point_shadows_main()
 {
 	// initialization phase
 	glfwInit();
@@ -154,20 +154,20 @@ int main()
 	// for some reason, unbinding the cube does not produce shadow lights. I tried checking collisions between overriding texture ids but there's nothing. :(
 
 
-	glm::vec3 lightPos(2.0f, 1.5f, 2.25f);
-	//glm::vec3 lightPos(-2.0f, 4.0f, -1.0f);
+	glm::vec3 pointLightPos(2.0f, 1.5f, 2.25f);
+	glm::vec3 dirLightPos(-2.0f, 4.0f, -1.0f);
 	float near = 1.0f;
 	float far = 25.0f;
 	glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near, far);
 
 	// prep view matrix for each cube face
 	std::vector<glm::mat4> shadowTransforms;
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // +X
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(-1.0,0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // -X
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0,  1.0))); // +Y
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0,-1.0, 0.0), glm::vec3(0.0, 0.0, -1.0))); // -Y
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))); // +Z
-	shadowTransforms.push_back(shadowProj * glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0,-1.0), glm::vec3(0.0, -1.0, 0.0))); // -Z
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // +X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(-1.0,0.0, 0.0), glm::vec3(0.0, -1.0, 0.0))); // -X
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0,  1.0))); // +Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0,-1.0, 0.0), glm::vec3(0.0, 0.0, -1.0))); // -Y
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0))); // +Z
+	shadowTransforms.push_back(shadowProj * glm::lookAt(pointLightPos, pointLightPos + glm::vec3(0.0, 0.0,-1.0), glm::vec3(0.0, -1.0, 0.0))); // -Z
 
 
 	unsigned int frame = createFrameVAO();
@@ -188,10 +188,9 @@ int main()
 		// first pass: render to depth map (directional shadows)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		/*
 		float near_plane = 1.0f, far_plane = 27.5f;
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		glm::mat4 lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
 		glCullFace(GL_FRONT);
@@ -209,7 +208,6 @@ int main()
 		object.Draw(depthDirShader);
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
-		*/
 
 		// render depth map (point shadows)
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
@@ -218,7 +216,7 @@ int main()
 
 		depthPointShader.use();
 		depthPointShader.setMat4("lightSpaceMatrix", glm::mat4(1.0f)); // no need for light space calculations
-		depthPointShader.setVec3("lightPos", lightPos);
+		depthPointShader.setVec3("lightPos", pointLightPos);
 		for (unsigned int i = 0; i < 6; ++i) {
 			depthPointShader.setMat4("shadowMatrices[" + std::to_string(i) + "]", shadowTransforms[i]);
 		}
@@ -253,11 +251,11 @@ int main()
 		shader.setMat4("view", camera.getViewMatrix());
 		shader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		// shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		shader.setMat4("lightSpaceMatrix", glm::mat4(1.0f));
+		shader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		// shader.setMat4("lightSpaceMatrix", glm::mat4(1.0f));
 
-		shader.setVec3("dirLight.direction", glm::normalize(-lightPos));
-		shader.setVec3("dirLight.position", lightPos);
+		shader.setVec3("dirLight.direction", glm::normalize(-pointLightPos));
+		shader.setVec3("dirLight.position", pointLightPos);
 		shader.setVec3("dirLight.ambient", glm::vec3(0.05f));
 		shader.setVec3("dirLight.diffuse", glm::vec3(1.0f));
 		shader.setVec3("dirLight.specular", glm::vec3(1.0f));
