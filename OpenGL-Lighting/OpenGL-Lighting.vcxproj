@@ -176,6 +176,8 @@
     <Image Include="resources\skybox\right.jpg" />
     <Image Include="resources\skybox\top.jpg" />
     <Image Include="resources\textures\apple.png" />
+    <Image Include="resources\textures\brickwall.jpg" />
+    <Image Include="resources\textures\brickwall_normal.jpg" />
     <Image Include="resources\textures\container2.png" />
     <Image Include="resources\textures\container2_specular.png" />
     <Image Include="resources\textures\container2_specular_colored.png" />
@@ -186,6 +188,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\objects\backpack\backpack.mtl" />
+    <None Include="shaders\base_lit.frag" />
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\base_vertex.vert" />
     <None Include="shaders\blinn_phong.frag" />

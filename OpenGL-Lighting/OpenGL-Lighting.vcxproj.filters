@@ -154,6 +154,12 @@
     <Image Include="resources\objects\backpack\specular.jpg">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="resources\textures\brickwall.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="resources\textures\brickwall_normal.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\base_vertex.vert" />
@@ -168,6 +174,7 @@
     <None Include="resources\objects\backpack\backpack.mtl" />
     <None Include="shaders\simple_depth.geom" />
     <None Include="shaders\linear_depth.frag" />
+    <None Include="shaders\base_lit.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
