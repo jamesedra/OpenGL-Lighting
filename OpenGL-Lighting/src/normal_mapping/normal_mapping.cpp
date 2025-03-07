@@ -83,7 +83,6 @@ int main() {
 	glReadBuffer(GL_NONE);
 	depthFBO.unbind();
 
-
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
 	unsigned int tex_norm = loadTexture("resources/textures/brickwall_normal.jpg", true, TextureColorSpace::Linear);

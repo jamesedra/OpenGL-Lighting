@@ -270,15 +270,37 @@ unsigned int createQuadVAO()
 		 1.0f,  1.0f, 0.0f,    0.0f, 0.0f, 1.0f,   1.0f, 1.0f   // top right
 	};
 
+	glm::vec3 positions1[3] = { getVertexPosition(vertices, 0), getVertexPosition(vertices, 8), getVertexPosition(vertices, 16) };
+	glm::vec3 positions2[3] = { getVertexPosition(vertices, 24), getVertexPosition(vertices, 32), getVertexPosition(vertices, 40) };
+	glm::vec2 uv1[3] = { getUVPosition(vertices, 6), getUVPosition(vertices, 14), getUVPosition(vertices, 22) };
+	glm::vec2 uv2[3] = { getUVPosition(vertices, 30), getUVPosition(vertices, 38), getUVPosition(vertices, 46) };
+
+	glm::mat2x3 TBMatrix1 = getTangentBitangentMatrix(positions1, uv1);
+	glm::mat2x3 TBMatrix2 = getTangentBitangentMatrix(positions2, uv2);
+
+	glm::vec3 tangent1 = TBMatrix1[0];
+	glm::vec3 bitangent1 = TBMatrix1[1];
+	glm::vec3 tangent2 = TBMatrix2[0];
+	glm::vec3 bitangent2 = TBMatrix2[1];
+
+	glm::vec3 tanBitan[12] = {
+		tangent1, bitangent1,
+		tangent1, bitangent1,
+		tangent1, bitangent1,
+		tangent2, bitangent2,
+		tangent2, bitangent2,
+		tangent2, bitangent2
+	};
+
 	unsigned int quadVAO;
 	glGenVertexArrays(1, &quadVAO);
+	glBindVertexArray(quadVAO);
 
 	unsigned int VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glBindVertexArray(quadVAO);
-
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
@@ -286,10 +308,42 @@ unsigned int createQuadVAO()
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
+	unsigned int tanBitanVBO;
+	glGenBuffers(1, &tanBitanVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, tanBitanVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(tanBitan), tanBitan, GL_STATIC_DRAW);
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)(0 * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)(sizeof(glm::vec3)));
+	glEnableVertexAttribArray(4);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
 	return quadVAO;
+}
+
+glm::mat2x3 getTangentBitangentMatrix(glm::vec3 positions[3], glm::vec2 texCoords[3]) {
+	glm::vec3 edge1 = positions[1] - positions[0];
+	glm::vec3 edge2 = positions[2] - positions[0];
+	glm::vec2 deltaUV1 = texCoords[1] - texCoords[0];
+	glm::vec2 deltaUV2 = texCoords[2] - texCoords[0];
+
+	glm::vec3 tangent, bitangent;
+
+	float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+	tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+	bitangent.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	bitangent.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	bitangent.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+
+	glm::mat2x3 tangentBitangent;
+	tangentBitangent[0] = tangent;  
+	tangentBitangent[1] = bitangent;
+
+	return tangentBitangent;
 }
 
 unsigned int createFrameVAO()
@@ -341,4 +395,12 @@ void bindTextures(const std::vector<unsigned int>& textures, GLenum textureTarge
 		glActiveTexture(startUnit + i);
 		glBindTexture(textureTarget, textures[i]);
 	}
+}
+
+glm::vec3 getVertexPosition(const float* vertices, int index) {
+	return glm::vec3(vertices[index], vertices[index + 1], vertices[index + 2]);
+}
+
+glm::vec2 getUVPosition(const float* vertices, int index) {
+	return glm::vec2(vertices[index], vertices[index + 1]);
 }

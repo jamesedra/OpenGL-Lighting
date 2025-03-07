@@ -5,6 +5,7 @@ in VS_OUT {
 	vec3 Normal;
 	vec2 TexCoords;
 	vec4 FragPosLightSpace;
+	mat3 TBN;
 } fs_in;
 
 out vec4 FragColor;
@@ -51,6 +52,8 @@ void main () {
 	// vec3 norm = normalize(fs_in.Normal);
 	vec3 norm = texture(material.normal, fs_in.TexCoords).rgb;
 	norm = normalize(norm * 2.0 - 1.0);
+	norm = normalize(fs_in.TBN * norm);
+
 	vec3 viewDir = normalize(viewPos - fs_in.FragPos);
 
 	vec3 result = CalcDirLight(dirLight, norm, viewDir); 
