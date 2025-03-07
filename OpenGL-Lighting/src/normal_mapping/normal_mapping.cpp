@@ -130,6 +130,7 @@ int main() {
 			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		floorShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		// floorShader.setVec3("dirLight.direction", glm::normalize(-dirLightPos));
+		floorShader.setVec3("lightPos", dirLightPos);
 		floorShader.setVec3("dirLight.position", dirLightPos);
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
 		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
@@ -140,7 +141,7 @@ int main() {
 		floorShader.setInt("material.normal", 2);
 		floorShader.setInt("dirShadowMap", 3);
 
-		floorShader.setFloat("material.shininess", 32.0f);
+		floorShader.setFloat("material.shininess", 64.0f);
 		floorShader.setVec3("viewPos", camera.getCameraPos());
 	
 		bindTextures(textureIDs);

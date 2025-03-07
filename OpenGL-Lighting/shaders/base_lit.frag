@@ -5,7 +5,9 @@ in VS_OUT {
 	vec3 Normal;
 	vec2 TexCoords;
 	vec4 FragPosLightSpace;
-	mat3 TBN;
+	vec3 TangentLightPos;
+	vec3 TangentViewPos;
+	vec3 TangentFragPos;
 } fs_in;
 
 out vec4 FragColor;
@@ -52,10 +54,9 @@ void main () {
 	// vec3 norm = normalize(fs_in.Normal);
 	vec3 norm = texture(material.normal, fs_in.TexCoords).rgb;
 	norm = normalize(norm * 2.0 - 1.0);
-	norm = normalize(fs_in.TBN * norm);
-
-	vec3 viewDir = normalize(viewPos - fs_in.FragPos);
-
+	// norm = normalize(fs_in.TBN * norm);
+	// vec3 viewDir = normalize(viewPos - fs_in.FragPos);
+	vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
 	vec3 result = CalcDirLight(dirLight, norm, viewDir); 
 	// result += CalcPointLight(pointLight, norm, fs_in.FragPos, viewDir);
 
@@ -66,7 +67,7 @@ void main () {
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {
-	vec3 lightDir = normalize(light.position - fs_in.FragPos);
+	vec3 lightDir = normalize(fs_in.TangentLightPos - fs_in.TangentFragPos);
 	float diff = max(dot(normal, lightDir), 0.0);
 
 	vec3 halfwayDir = normalize(lightDir + viewDir);
