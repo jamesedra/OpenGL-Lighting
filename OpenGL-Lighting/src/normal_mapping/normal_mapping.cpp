@@ -86,10 +86,11 @@ int main() {
 
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
+	unsigned int tex_norm = loadTexture("resources/textures/brickwall_normal.jpg", true, TextureColorSpace::Linear);
 	unsigned int tex_spec = createDefaultTexture();
 
-	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, depthTexture.id };
-	glm::vec3 dirLightPos(-2.0f, 4.0f, -1.0f);
+	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, tex_norm, depthTexture.id };
+	glm::vec3 dirLightPos(1.0f, 4.0f, 1.0f);
 	float near_plane = 1.0f, far_plane = 7.5f;
 
 	// render loop
@@ -109,7 +110,7 @@ int main() {
 		depthDirShader.use();
 		depthDirShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
@@ -127,20 +128,22 @@ int main() {
 		floorShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
 		floorShader.setMat4("view", camera.getViewMatrix());
 		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		floorShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		// floorShader.setVec3("dirLight.direction", glm::normalize(-dirLightPos));
 		floorShader.setVec3("dirLight.position", dirLightPos);
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
-		floorShader.setVec3("dirLight.diffuse", glm::vec3(1.0f));
-		floorShader.setVec3("dirLight.specular", glm::vec3(0.5));
+		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
+		floorShader.setVec3("dirLight.specular", glm::vec3(0.3f));
 
 		floorShader.setInt("material.diffuse", 0);
 		floorShader.setInt("material.specular", 1);
-		floorShader.setFloat("material.shininess", 64.0f);
-		floorShader.setVec3("viewPos", camera.getCameraPos());
-		floorShader.setInt("dirShadowMap", 2);
+		floorShader.setInt("material.normal", 2);
+		floorShader.setInt("dirShadowMap", 3);
 
+		floorShader.setFloat("material.shininess", 32.0f);
+		floorShader.setVec3("viewPos", camera.getCameraPos());
+	
 		bindTextures(textureIDs);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
