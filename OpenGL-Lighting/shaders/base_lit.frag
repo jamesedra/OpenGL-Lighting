@@ -51,12 +51,13 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 float ShadowDirCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir);
 float ShadowPointCalculation(PointLight light, vec3 fragPos);
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
+vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir);
 
 void main () {
 	vec3 viewDir = normalize(fs_in.TangentViewPos - fs_in.TangentFragPos);
 
 	// vec3 norm = normalize(fs_in.Normal);
-	vec2 texCoords = ParallaxMapping(fs_in.TexCoords, viewDir);
+	vec2 texCoords = SteepParallaxMapping(fs_in.TexCoords, viewDir);
 
 	if (texCoords.x > 1.0 || texCoords.y > 1.0 || texCoords.x < 0.0 || texCoords.y < 0.0) discard;
 
@@ -158,4 +159,29 @@ vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir) {
 	float height = texture(material.depth, texCoords).r;
 	vec2 p = viewDir.xy / viewDir.z * (height * height_scale);
 	return texCoords - p;
+}
+
+vec2 SteepParallaxMapping(vec2 texCoords, vec3 viewDir) {
+	const float minLayers = 8.0;
+	const float maxLayers = 32.0;
+
+	float numLayers = mix(maxLayers, minLayers, max(dot(vec3(0.0, 0.0, 0.1), viewDir), 0.0));
+	float layerDepth = 1.0 / numLayers;
+	float currentLayerDepth = 0.0;
+	vec2 P = viewDir.xy * height_scale;
+	vec2 deltaTexCoords = P / numLayers;
+
+	vec2 currTexCoords = texCoords;
+	float currDepthMapValue = texture(material.depth, currTexCoords).r;
+
+	while (currentLayerDepth < currDepthMapValue) {
+		// shift uv
+		currTexCoords -= deltaTexCoords;
+		// get the shifted uv depth value
+		currDepthMapValue = texture(material.depth, currTexCoords).r;
+		// iterate to the next depth layer
+		currentLayerDepth += layerDepth;
+	}
+
+	return currTexCoords;
 }

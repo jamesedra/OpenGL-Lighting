@@ -155,7 +155,7 @@ int main() {
 
 		floorShader.setFloat("material.shininess", 64.0f);
 		floorShader.setVec3("viewPos", camera.getCameraPos());
-		floorShader.setFloat("height_scale", 0.2f);
+		floorShader.setFloat("height_scale", 0.05f);
 
 		bindTextures(textureIDs);
 		glBindVertexArray(floorVAO);
