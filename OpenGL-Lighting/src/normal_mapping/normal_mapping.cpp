@@ -60,6 +60,7 @@ int main() {
 
 	Shader floorShader("shaders/base_lit.vert", "shaders/base_lit.frag");
 	Shader depthDirShader("shaders/simple_depth.vert", "shaders/empty.frag");
+	Shader cyborgShader("shaders/base_lit.vert", "shaders/material_lit.frag");
 
 	// directional shadow mapping
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
@@ -89,8 +90,10 @@ int main() {
 	unsigned int tex_spec = createDefaultTexture();
 
 	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, tex_norm, depthTexture.id };
-	glm::vec3 dirLightPos(1.0f, 4.0f, 1.0f);
-	float near_plane = 1.0f, far_plane = 7.5f;
+	glm::vec3 dirLightPos(5.0f, 4.0f, 5.0f);
+	float near_plane = 1.0f, far_plane = 15.0f;
+
+	Model cyborg("resources/objects/cyborg/cyborg.obj");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -99,6 +102,11 @@ int main() {
 		processInput(window);
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// light movement test
+		float time = glfwGetTime();
+		dirLightPos.x = 5.0f * sin(time);
+		dirLightPos.z = 5.0f * cos(time);
 
 		// render commands
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
@@ -109,12 +117,15 @@ int main() {
 		depthDirShader.use();
 		depthDirShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		cyborg.Draw(depthDirShader);
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
 
@@ -129,7 +140,6 @@ int main() {
 		floorShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 		floorShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		// floorShader.setVec3("dirLight.direction", glm::normalize(-dirLightPos));
 		floorShader.setVec3("lightPos", dirLightPos);
 		floorShader.setVec3("dirLight.position", dirLightPos);
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
@@ -147,6 +157,26 @@ int main() {
 		bindTextures(textureIDs);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		cyborgShader.use();
+		cyborgShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
+		cyborgShader.setMat4("view", camera.getViewMatrix());
+		cyborgShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
+			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+		cyborgShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
+		cyborgShader.setVec3("lightPos", dirLightPos);
+		cyborgShader.setVec3("dirLight.position", dirLightPos);
+		cyborgShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
+		cyborgShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
+		cyborgShader.setVec3("dirLight.specular", glm::vec3(0.3f));
+		cyborgShader.setInt("dirShadowMap", 3);
+
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, depthTexture.id);
+
+		cyborgShader.setFloat("material.shininess", 8.0f);
+		cyborgShader.setVec3("viewPos", camera.getCameraPos());
+		cyborg.Draw(cyborgShader);
 
 		// checks events and swap buffers
 		glfwPollEvents();

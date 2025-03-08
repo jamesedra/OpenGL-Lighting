@@ -27,6 +27,9 @@ in VS_OUT {
 	vec3 Normal;
 	vec2 TexCoords;
 	vec4 FragPosLightSpace;
+	vec3 TangentLightPos;
+	vec3 TangentViewPos;
+	vec3 TangentFragPos;
 } fs_in;
  
  #define NR_POINT_LIGHTS 4
@@ -62,8 +65,8 @@ void main () {
 	// gamma correction
 	float gamma = 2.2;
     result = pow(result, vec3(1.0/gamma));
-
-	FragColor = vec4(result, 1.0);
+	FragColor = vec4(vec3(texture(shadowMap, fs_in.TexCoords).r), 1.0);
+	// FragColor = vec4(result, 1.0);
 }
  
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir) {

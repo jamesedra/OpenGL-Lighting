@@ -169,6 +169,9 @@
     <Image Include="resources\objects\backpack\normal.png" />
     <Image Include="resources\objects\backpack\roughness.jpg" />
     <Image Include="resources\objects\backpack\specular.jpg" />
+    <Image Include="resources\objects\cyborg\cyborg_diffuse.png" />
+    <Image Include="resources\objects\cyborg\cyborg_normal.png" />
+    <Image Include="resources\objects\cyborg\cyborg_specular.png" />
     <Image Include="resources\skybox\back.jpg" />
     <Image Include="resources\skybox\bottom.jpg" />
     <Image Include="resources\skybox\front.jpg" />
@@ -188,6 +191,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\objects\backpack\backpack.mtl" />
+    <None Include="resources\objects\cyborg\cyborg.blend" />
+    <None Include="resources\objects\cyborg\cyborg.blend1" />
+    <None Include="resources\objects\cyborg\cyborg.mtl" />
     <None Include="shaders\base_lit.frag" />
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\base_vertex.vert" />
@@ -196,6 +202,7 @@
     <None Include="shaders\empty.frag" />
     <None Include="shaders\framebuffer_quad.vert" />
     <None Include="shaders\linear_depth.frag" />
+    <None Include="shaders\material_lit.frag" />
     <None Include="shaders\red.frag" />
     <None Include="shaders\simple_depth.frag" />
     <None Include="shaders\simple_depth.geom" />

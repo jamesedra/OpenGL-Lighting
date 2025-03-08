@@ -19,7 +19,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int dir_shadow_main()
+int dir_shadows_main()
 {
 	// initialization phase
 	glfwInit();
