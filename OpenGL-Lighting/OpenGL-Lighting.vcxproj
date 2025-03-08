@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClCompile Include="src\modules\shader.cpp" />
     <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
+    <ClCompile Include="src\parallax\parallax.cpp" />
     <ClCompile Include="src\shadow_mapping\directional_shadow.cpp" />
     <ClCompile Include="src\modules\camera.cpp" />
     <ClCompile Include="src\modules\glad.c" />
@@ -179,6 +180,9 @@
     <Image Include="resources\skybox\right.jpg" />
     <Image Include="resources\skybox\top.jpg" />
     <Image Include="resources\textures\apple.png" />
+    <Image Include="resources\textures\bricks2.jpg" />
+    <Image Include="resources\textures\bricks2_disp.jpg" />
+    <Image Include="resources\textures\bricks2_normal.jpg" />
     <Image Include="resources\textures\brickwall.jpg" />
     <Image Include="resources\textures\brickwall_normal.jpg" />
     <Image Include="resources\textures\container2.png" />

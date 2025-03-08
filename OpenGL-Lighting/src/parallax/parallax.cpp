@@ -19,14 +19,14 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int normal_map_main() {
+int main() {
 	// initialization phase
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Normal Mapping", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Parallax Mapping", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -51,8 +51,8 @@ int normal_map_main() {
 
 	// camera settings
 	Camera camera(
-		glm::vec3(0.0f, 1.0f, 3.0f),
-		glm::vec3(0.0f, 0.0f, -1.0f),
+		glm::vec3(8.0f, 8.0f, 8.0f),
+		glm::vec3(-1.0f, -1.0f, -1.0f),
 		glm::vec3(0.0f, 1.0f, 0.0f),
 		45.0f
 	);
@@ -85,11 +85,12 @@ int normal_map_main() {
 	depthFBO.unbind();
 
 	unsigned int floorVAO = createQuadVAO();
-	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
-	unsigned int tex_norm = loadTexture("resources/textures/brickwall_normal.jpg", true, TextureColorSpace::Linear);
+	unsigned int tex_diff = loadTexture("resources/textures/bricks2.jpg", true, TextureColorSpace::sRGB);
+	unsigned int tex_norm = loadTexture("resources/textures/bricks2_normal.jpg", true, TextureColorSpace::Linear);
 	unsigned int tex_spec = createDefaultTexture();
+	unsigned int tex_disp = loadTexture("resources/textures/bricks2_disp.jpg", true, TextureColorSpace::Linear);
 
-	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, tex_norm, depthTexture.id };
+	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, tex_norm, tex_disp, depthTexture.id };
 	glm::vec3 dirLightPos(5.0f, 4.0f, 5.0f);
 	float near_plane = 1.0f, far_plane = 15.0f;
 
@@ -149,11 +150,13 @@ int normal_map_main() {
 		floorShader.setInt("material.diffuse", 0);
 		floorShader.setInt("material.specular", 1);
 		floorShader.setInt("material.normal", 2);
-		floorShader.setInt("dirShadowMap", 3);
+		floorShader.setInt("material.depth", 3);
+		floorShader.setInt("dirShadowMap", 4);
 
 		floorShader.setFloat("material.shininess", 64.0f);
 		floorShader.setVec3("viewPos", camera.getCameraPos());
-	
+		floorShader.setFloat("height_scale", 0.2f);
+
 		bindTextures(textureIDs);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -169,9 +172,9 @@ int normal_map_main() {
 		cyborgShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
 		cyborgShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
 		cyborgShader.setVec3("dirLight.specular", glm::vec3(0.3f));
-		cyborgShader.setInt("dirShadowMap", 3);
+		cyborgShader.setInt("dirShadowMap", 4);
 
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, depthTexture.id);
 
 		cyborgShader.setFloat("material.shininess", 8.0f);
