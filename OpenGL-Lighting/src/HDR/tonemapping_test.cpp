@@ -19,14 +19,15 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int parallax_main() {
+int main()
+{
 	// initialization phase
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Parallax Mapping", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Tonemapping", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -44,7 +45,10 @@ int parallax_main() {
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glEnable(GL_DEPTH_TEST);
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
+
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -58,11 +62,21 @@ int parallax_main() {
 	);
 	glfwSetWindowUserPointer(window, &camera);
 
-	Shader floorShader("shaders/base_lit.vert", "shaders/base_lit.frag");
+	// HDR color attachment
+	Texture colorBuffer(W_WIDTH, W_HEIGHT, GL_RGBA16F, GL_RGBA);
+	colorBuffer.setTexFilter(GL_LINEAR);
+	colorBuffer.unbind();
+	// HDR framebuffer
+	Framebuffer tonemapper(W_WIDTH, W_HEIGHT, colorBuffer, GL_COLOR_ATTACHMENT0);
+	tonemapper.unbind();
+	unsigned int HDRFrame = createFrameVAO();
+	
+	// Shaders
 	Shader depthDirShader("shaders/simple_depth.vert", "shaders/empty.frag");
-	Shader cyborgShader("shaders/base_lit.vert", "shaders/material_lit.frag");
+	Shader floorShader("shaders/base_lit.vert", "shaders/base_lit.frag");
+	Shader lightSourceShader("shaders/base_vertex.vert", "shaders/red.frag");
 
-	// directional shadow mapping
+	// Directional shadows setup
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 	Texture depthTexture(SHADOW_WIDTH, SHADOW_HEIGHT, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT);
 	depthTexture.setTexFilter(GL_NEAREST);
@@ -78,23 +92,33 @@ int parallax_main() {
 		std::cout << "Frame buffer incomplete" << std::endl;
 		return -1;
 	}
-	// no need for color buffers. set both draw and read buffer to none
 	depthFBO.bind();
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
 	depthFBO.unbind();
 
+	// Floor setup
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/bricks2.jpg", true, TextureColorSpace::sRGB);
 	unsigned int tex_norm = loadTexture("resources/textures/bricks2_normal.jpg", true, TextureColorSpace::Linear);
 	unsigned int tex_spec = createDefaultTexture();
 	unsigned int tex_disp = loadTexture("resources/textures/bricks2_disp.jpg", true, TextureColorSpace::Linear);
-
 	std::vector<unsigned int> textureIDs = { tex_diff, tex_spec, tex_norm, tex_disp, depthTexture.id };
-	glm::vec3 dirLightPos(5.0f, 4.0f, 5.0f);
-	float near_plane = 1.0f, far_plane = 15.0f;
 
-	Model cyborg("resources/objects/cyborg/cyborg.obj");
+	// Light source setup
+	unsigned int lightCubeVAO = createCubeVAO();
+
+	// Lighting
+	glm::vec3 dirLightPos(5.0f, 4.0f, 5.0f);
+	float near_plane = 1.0f, far_plane = 17.5f;
+
+	glm::vec3 pointLightPos(0.0f, 1.0f, 0.0f);
+	float constant = 1.0f;
+	float linear = 0.02f;
+	float quadratic = 0.0045f;
+	glm::vec3 diffuse = glm::vec3(0.9f);
+	glm::vec3 specular = glm::vec3(0.1f);
+	glm::vec3 ambient = glm::vec3(0.05f);
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -102,14 +126,9 @@ int parallax_main() {
 		// input
 		processInput(window);
 
+		// glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// light movement test
-		float time = glfwGetTime();
-		dirLightPos.x = 5.0f * sin(time);
-		dirLightPos.z = 5.0f * cos(time);
-
-		// render commands
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
@@ -118,22 +137,38 @@ int parallax_main() {
 		depthDirShader.use();
 		depthDirShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(10.0f, 5.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
 
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		cyborg.Draw(depthDirShader);
+
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPos);
+		model = glm::rotate(model, glm::radians((float)std::fmod(glfwGetTime() * 50, 360.0)), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5, 0.5, 0.5));
+		depthDirShader.setMat4("model", model);
+
+		glBindVertexArray(lightCubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
-
 
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		lightSourceShader.use();
+		lightSourceShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
+		lightSourceShader.setMat4("view", camera.getViewMatrix());
+		model = glm::mat4(1.0f);
+		model = glm::translate(model, pointLightPos);
+		model = glm::rotate(model, glm::radians((float)std::fmod(glfwGetTime() * 50, 360.0)), glm::vec3(1.0f, 0.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5, 0.5, 0.5));
+		lightSourceShader.setMat4("model", model);
+		glBindVertexArray(lightCubeVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		floorShader.use();
 		floorShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
@@ -144,8 +179,13 @@ int parallax_main() {
 		floorShader.setVec3("lightPos", dirLightPos);
 		floorShader.setVec3("dirLight.position", dirLightPos);
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
-		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
+		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.1f));
 		floorShader.setVec3("dirLight.specular", glm::vec3(0.3f));
+
+		floorShader.setVec4("pointLight.positionAndConstant", glm::vec4(pointLightPos, constant));
+		floorShader.setVec4("pointLight.ambientAndLinear", glm::vec4(ambient, linear));
+		floorShader.setVec4("pointLight.diffuseAndQuadratic", glm::vec4(diffuse, quadratic));
+		floorShader.setVec4("pointLight.specular", glm::vec4(specular, 1.0));
 
 		floorShader.setInt("material.diffuse", 0);
 		floorShader.setInt("material.specular", 1);
@@ -153,7 +193,7 @@ int parallax_main() {
 		floorShader.setInt("material.depth", 3);
 		floorShader.setInt("dirShadowMap", 4);
 
-		floorShader.setFloat("material.shininess", 64.0f);
+		floorShader.setFloat("material.shininess", 32.0f);
 		floorShader.setVec3("viewPos", camera.getCameraPos());
 		floorShader.setFloat("height_scale", 0.05f);
 
@@ -161,25 +201,6 @@ int parallax_main() {
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		cyborgShader.use();
-		cyborgShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
-		cyborgShader.setMat4("view", camera.getViewMatrix());
-		cyborgShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
-			glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-		cyborgShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
-		cyborgShader.setVec3("lightPos", dirLightPos);
-		cyborgShader.setVec3("dirLight.position", dirLightPos);
-		cyborgShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
-		cyborgShader.setVec3("dirLight.diffuse", glm::vec3(0.5f));
-		cyborgShader.setVec3("dirLight.specular", glm::vec3(0.3f));
-		cyborgShader.setInt("dirShadowMap", 4);
-
-		glActiveTexture(GL_TEXTURE4);
-		glBindTexture(GL_TEXTURE_2D, depthTexture.id);
-
-		cyborgShader.setFloat("material.shininess", 8.0f);
-		cyborgShader.setVec3("viewPos", camera.getCameraPos());
-		cyborg.Draw(cyborgShader);
 
 		// checks events and swap buffers
 		glfwPollEvents();

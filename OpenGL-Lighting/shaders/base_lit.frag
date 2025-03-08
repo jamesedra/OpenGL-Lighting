@@ -8,6 +8,7 @@ in VS_OUT {
 	vec3 TangentLightPos;
 	vec3 TangentViewPos;
 	vec3 TangentFragPos;
+	mat3 TBN;
 } fs_in;
 
 out vec4 FragColor;
@@ -47,7 +48,7 @@ uniform float far_plane;
 uniform float height_scale;
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords);
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords);
 float ShadowDirCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir);
 float ShadowPointCalculation(PointLight light, vec3 fragPos);
 vec2 ParallaxMapping(vec2 texCoords, vec3 viewDir);
@@ -66,6 +67,7 @@ void main () {
 	norm = normalize(norm * 2.0 - 1.0);
 	
 	vec3 result = CalcDirLight(dirLight, norm, viewDir, texCoords); 
+	result += CalcPointLight(pointLight, norm, fs_in.TangentFragPos, viewDir, texCoords);
 
 	float gamma = 2.2;
 	result = pow(result, vec3(1.0/gamma));
@@ -73,7 +75,6 @@ void main () {
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {
-
 	vec3 lightDir = normalize(fs_in.TangentLightPos - fs_in.TangentFragPos);
 	float diff = max(dot(normal, lightDir), 0.0);
 
@@ -89,8 +90,9 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {
 	return (ambient + (1.0 - shadow) * (diffuse + specular));
 }
 
-vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
-	vec3 lightDir = light.positionAndConstant.rgb - fragPos;
+vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords) {
+	vec3 tangentPointPos = fs_in.TBN * light.positionAndConstant.rgb;
+	vec3 lightDir = normalize(tangentPointPos - fs_in.TangentFragPos);
 	float distance = length(lightDir);
 	lightDir = normalize(lightDir);
 	
@@ -110,7 +112,7 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir) {
 	ambient *= attenuation;
 	diffuse *= attenuation;
 	specular *= attenuation;
-
+	return ambient + diffuse + specular;
 	return ambient + (1.0 - shadow) * (diffuse + specular);
 }
 
