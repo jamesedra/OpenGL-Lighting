@@ -11,7 +11,8 @@ in VS_OUT {
 	mat3 TBN;
 } fs_in;
 
-out vec4 FragColor;
+layout (location = 0) out vec4 FragColor;
+layout (location = 1) out vec4 BrightColor;
 
 struct Material {
 	sampler2D diffuse;
@@ -72,6 +73,9 @@ void main () {
 	// float gamma = 2.2;
 	// result = pow(result, vec3(1.0/gamma));
 	FragColor = vec4(result, 1.0);
+
+	float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+	BrightColor = brightness > 1.0 ? vec4(FragColor.rgb, 1.0) : vec4(vec3(0.0), 1.0);
 }
 
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir, vec2 texCoords) {

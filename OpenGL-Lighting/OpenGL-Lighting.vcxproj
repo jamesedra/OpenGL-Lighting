@@ -134,6 +134,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\HDR\bloom_test.cpp" />
     <ClCompile Include="src\HDR\tonemapping_test.cpp" />
     <ClCompile Include="src\modules\shader.cpp" />
     <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
@@ -205,11 +206,14 @@
     <None Include="shaders\blinn_phong.frag" />
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
     <None Include="shaders\empty.frag" />
-    <None Include="shaders\framebuffer_quad.vert" />
+    <None Include="shaders\base_lit_mrt.frag" />
+    <None Include="shaders\post_process\bloom.frag" />
+    <None Include="shaders\post_process\framebuffer_quad.vert" />
     <None Include="shaders\linear_depth.frag" />
     <None Include="shaders\material_lit.frag" />
+    <None Include="shaders\post_process\gaussian.frag" />
     <None Include="shaders\red.frag" />
-    <None Include="shaders\rh_tonemapping.frag" />
+    <None Include="shaders\post_process\rh_tonemapping.frag" />
     <None Include="shaders\simple_depth.frag" />
     <None Include="shaders\simple_depth.geom" />
     <None Include="shaders\simple_depth.vert" />

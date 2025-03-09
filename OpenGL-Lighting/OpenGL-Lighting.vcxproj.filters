@@ -54,6 +54,9 @@
     <ClCompile Include="src\HDR\tonemapping_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\HDR\bloom_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h">
@@ -191,7 +194,7 @@
     <None Include="shaders\red.frag" />
     <None Include="shaders\simple_depth.vert" />
     <None Include="shaders\empty.frag" />
-    <None Include="shaders\framebuffer_quad.vert" />
+    <None Include="shaders\post_process\framebuffer_quad.vert" />
     <None Include="shaders\simple_depth.frag" />
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
@@ -203,7 +206,10 @@
     <None Include="resources\objects\cyborg\cyborg.blend1" />
     <None Include="resources\objects\cyborg\cyborg.mtl" />
     <None Include="shaders\material_lit.frag" />
-    <None Include="shaders\rh_tonemapping.frag" />
+    <None Include="shaders\post_process\rh_tonemapping.frag" />
+    <None Include="shaders\post_process\bloom.frag" />
+    <None Include="shaders\base_lit_mrt.frag" />
+    <None Include="shaders\post_process\gaussian.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
