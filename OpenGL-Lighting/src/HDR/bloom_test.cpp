@@ -19,7 +19,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int main()
+int bloom_main()
 {
 	// initialization phase
 	glfwInit();
