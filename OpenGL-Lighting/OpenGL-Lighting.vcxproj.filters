@@ -203,6 +203,7 @@
     <None Include="resources\objects\cyborg\cyborg.blend1" />
     <None Include="resources\objects\cyborg\cyborg.mtl" />
     <None Include="shaders\material_lit.frag" />
+    <None Include="shaders\rh_tonemapping.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

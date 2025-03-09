@@ -66,8 +66,10 @@ int main()
 	Texture colorBuffer(W_WIDTH, W_HEIGHT, GL_RGBA16F, GL_RGBA);
 	colorBuffer.setTexFilter(GL_LINEAR);
 	colorBuffer.unbind();
+
 	// HDR framebuffer
 	Framebuffer tonemapper(W_WIDTH, W_HEIGHT, colorBuffer, GL_COLOR_ATTACHMENT0);
+	tonemapper.attachRenderbuffer(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
 	tonemapper.unbind();
 	unsigned int HDRFrame = createFrameVAO();
 	
@@ -75,6 +77,7 @@ int main()
 	Shader depthDirShader("shaders/simple_depth.vert", "shaders/empty.frag");
 	Shader floorShader("shaders/base_lit.vert", "shaders/base_lit.frag");
 	Shader lightSourceShader("shaders/base_vertex.vert", "shaders/red.frag");
+	Shader hdrShader("shaders/framebuffer_quad.vert", "shaders/rh_tonemapping.frag");
 
 	// Directional shadows setup
 	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
@@ -109,15 +112,15 @@ int main()
 	unsigned int lightCubeVAO = createCubeVAO();
 
 	// Lighting
-	glm::vec3 dirLightPos(5.0f, 4.0f, 5.0f);
+	glm::vec3 dirLightPos(1.0f, 5.0f, 1.0f);
 	float near_plane = 1.0f, far_plane = 17.5f;
 
-	glm::vec3 pointLightPos(0.0f, 1.0f, 0.0f);
+	glm::vec3 pointLightPos(0.0f, 0.5f, 0.0f);
 	float constant = 1.0f;
-	float linear = 0.02f;
-	float quadratic = 0.0045f;
-	glm::vec3 diffuse = glm::vec3(0.9f);
-	glm::vec3 specular = glm::vec3(0.1f);
+	float linear = 0.14f;
+	float quadratic = 0.7f;
+	glm::vec3 diffuse = glm::vec3(12.0f);
+	glm::vec3 specular = glm::vec3(1.0f);
 	glm::vec3 ambient = glm::vec3(0.05f);
 
 	// render loop
@@ -126,19 +129,20 @@ int main()
 		// input
 		processInput(window);
 
-		// glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
 		glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
 		glm::mat4 lightView = glm::lookAt(dirLightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 
+		// get directional shadow pass
 		glCullFace(GL_FRONT);
+		glEnable(GL_DEPTH_TEST); // enable depth testing (disabled for tone mapping)
+
 		depthDirShader.use();
 		depthDirShader.setMat4("lightSpaceMatrix", lightSpaceMatrix);
 		depthDirShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f),
 			glm::vec3(10.0f, 10.0f, 10.0f), -90.0f, glm::vec3(1.0f, 0.0f, 0.0f)));
-
 		depthFBO.bind();
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindVertexArray(floorVAO);
@@ -155,10 +159,11 @@ int main()
 		depthFBO.unbind();
 		glCullFace(GL_BACK);
 
+		// saved rendered scene to the tonemapper
+		tonemapper.bind();
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 		lightSourceShader.use();
 		lightSourceShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.f));
 		lightSourceShader.setMat4("view", camera.getViewMatrix());
@@ -179,7 +184,7 @@ int main()
 		floorShader.setVec3("lightPos", dirLightPos);
 		floorShader.setVec3("dirLight.position", dirLightPos);
 		floorShader.setVec3("dirLight.ambient", glm::vec3(0.05f));
-		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.1f));
+		floorShader.setVec3("dirLight.diffuse", glm::vec3(0.2f));
 		floorShader.setVec3("dirLight.specular", glm::vec3(0.3f));
 
 		floorShader.setVec4("pointLight.positionAndConstant", glm::vec4(pointLightPos, constant));
@@ -200,7 +205,19 @@ int main()
 		bindTextures(textureIDs);
 		glBindVertexArray(floorVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		tonemapper.unbind();
 
+		// render color attachment from tonemapper
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
+		hdrShader.use();
+		hdrShader.setInt("hdrBuffer", 0);
+		hdrShader.setFloat("exposure", 0.1);
+		glBindVertexArray(HDRFrame);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, colorBuffer.id);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// checks events and swap buffers
 		glfwPollEvents();

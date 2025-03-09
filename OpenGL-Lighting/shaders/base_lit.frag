@@ -69,8 +69,8 @@ void main () {
 	vec3 result = CalcDirLight(dirLight, norm, viewDir, texCoords); 
 	result += CalcPointLight(pointLight, norm, fs_in.TangentFragPos, viewDir, texCoords);
 
-	float gamma = 2.2;
-	result = pow(result, vec3(1.0/gamma));
+	// float gamma = 2.2;
+	// result = pow(result, vec3(1.0/gamma));
 	FragColor = vec4(result, 1.0);
 }
 

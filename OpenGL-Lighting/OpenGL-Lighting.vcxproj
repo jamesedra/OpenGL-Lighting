@@ -209,6 +209,7 @@
     <None Include="shaders\linear_depth.frag" />
     <None Include="shaders\material_lit.frag" />
     <None Include="shaders\red.frag" />
+    <None Include="shaders\rh_tonemapping.frag" />
     <None Include="shaders\simple_depth.frag" />
     <None Include="shaders\simple_depth.geom" />
     <None Include="shaders\simple_depth.vert" />
