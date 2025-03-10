@@ -213,6 +213,8 @@
     <None Include="shaders\post_process\bloom.frag" />
     <None Include="shaders\base_lit_mrt.frag" />
     <None Include="shaders\post_process\gaussian.frag" />
+    <None Include="shaders\deferred\def_gbf.frag" />
+    <None Include="shaders\deferred\def_lit.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

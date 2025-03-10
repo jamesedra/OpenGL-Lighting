@@ -61,6 +61,7 @@ int main()
 	);
 	glfwSetWindowUserPointer(window, &camera);
 
+	// G-Buffer
 	Framebuffer gBuffer(W_WIDTH, W_HEIGHT);
 
 	// position color buffer
@@ -78,8 +79,24 @@ int main()
 	gAlbedoSpec.setTexFilter(GL_NEAREST);
 	gBuffer.attachTexture2D(gAlbedoSpec, GL_COLOR_ATTACHMENT2);
 
+	// texture and renderbuffer attachments
+	gBuffer.bind();
 	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 	glDrawBuffers(3, attachments);
+	gBuffer.attachRenderbuffer(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
+	
+	
+	//stbi_set_flip_vertically_on_load(true);
+	// output frame
+	unsigned int frameVAO = createFrameVAO();
+	// model test
+	Model cyborg("resources/objects/cyborg/cyborg.obj");
+
+	// Shaders
+	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
+	Shader lightingShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_lit.frag");
+
+	std::vector<unsigned int> textureIDs = { gPosition.id, gNormal.id, gAlbedoSpec.id };
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -87,9 +104,30 @@ int main()
 		// input
 		processInput(window);
 
+		gBuffer.bind();
+		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		gBufferShader.use();
+		gBufferShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		gBufferShader.setMat4("view", camera.getViewMatrix());
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+		gBufferShader.setMat4("model", model);
+		cyborg.Draw(gBufferShader);
+		gBuffer.unbind();
+
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
+		lightingShader.use();
+		lightingShader.setInt("gPosition", 0);
+		lightingShader.setInt("gNormal", 1);
+		lightingShader.setInt("gAlbedoSpec", 2);
+		glBindVertexArray(frameVAO);
+		bindTextures(textureIDs);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		// checks events and swap buffers
 		glfwPollEvents();
