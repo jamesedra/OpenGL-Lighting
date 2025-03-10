@@ -324,6 +324,7 @@ unsigned int createQuadVAO()
 	glGenBuffers(1, &tanBitanVBO);
 	glBindBuffer(GL_ARRAY_BUFFER, tanBitanVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(tanBitan), tanBitan, GL_STATIC_DRAW);
+
 	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)(0 * sizeof(glm::vec3)));
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 2 * sizeof(glm::vec3), (void*)(sizeof(glm::vec3)));

@@ -24,7 +24,7 @@ public:
 		if (type != -1)
 			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, baseFormat, type, data);
 		else
-			std::cerr << "Error: baseFormat not supported." << std::endl;
+			std::cerr << "Error: internal format not supported." << std::endl;
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 
@@ -36,7 +36,7 @@ public:
 		if (type != -1)
 			glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, baseFormat, type, data);
 		else
-			std::cerr << "Error: baseFormat not supported." << std::endl;
+			std::cerr << "Error: internal format not supported." << std::endl;
 		setTexFilter(filter);
 		setTexWrap(wrap);
 		glBindTexture(GL_TEXTURE_2D, 0);
