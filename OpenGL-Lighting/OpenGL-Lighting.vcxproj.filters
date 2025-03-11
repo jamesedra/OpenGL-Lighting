@@ -215,6 +215,7 @@
     <None Include="shaders\post_process\gaussian.frag" />
     <None Include="shaders\deferred\def_gbf.frag" />
     <None Include="shaders\deferred\def_lit.frag" />
+    <None Include="shaders\emissive_color.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

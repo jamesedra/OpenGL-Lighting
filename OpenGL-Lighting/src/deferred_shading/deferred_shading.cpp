@@ -95,10 +95,12 @@ int main()
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
 	unsigned int tex_spec = createDefaultTexture();
+	unsigned int lightCube = createCubeVAO();
 
 	// Shaders
 	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
 	Shader lightingShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_lit.frag");
+	Shader lightCubeShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
 
 	std::vector<unsigned int> textureIDs = { gPosition.id, gNormal.id, gAlbedoSpec.id };
 	
@@ -143,7 +145,6 @@ int main()
 
 		// Geometry pass
 		gBuffer.bind();
-		glEnable(GL_DEPTH_TEST);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -170,7 +171,7 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		gBuffer.unbind();
 
-		// lighting pass
+		// Lighting pass
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
@@ -184,6 +185,28 @@ int main()
 		glBindVertexArray(frameVAO);
 		bindTextures(textureIDs);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		glEnable(GL_DEPTH_TEST);
+		gBuffer.bind();
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer.FBO);
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBlitFramebuffer(0, 0, W_WIDTH, W_HEIGHT, 0, 0, W_WIDTH, W_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		// forward render light cubes
+		lightCubeShader.use();
+		lightCubeShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		lightCubeShader.setMat4("view", camera.getViewMatrix());
+		
+		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, lights[i].Position);
+			model = glm::scale(model, glm::vec3(0.25f));
+			lightCubeShader.setMat4("model", model);
+			lightCubeShader.setVec3("Color", lights[i].Color);
+			glBindVertexArray(lightCube);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+		}
 
 		// checks events and swap buffers
 		glfwPollEvents();
