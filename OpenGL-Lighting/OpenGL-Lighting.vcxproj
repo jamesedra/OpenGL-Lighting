@@ -206,6 +206,8 @@
     <None Include="shaders\base_vertex.vert" />
     <None Include="shaders\blinn_phong.frag" />
     <None Include="shaders\deferred\def_gbf.frag" />
+    <None Include="shaders\deferred\def_lightvolume.frag" />
+    <None Include="shaders\deferred\def_lightvolume.vert" />
     <None Include="shaders\deferred\def_lit.frag" />
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
     <None Include="shaders\emissive_color.frag" />

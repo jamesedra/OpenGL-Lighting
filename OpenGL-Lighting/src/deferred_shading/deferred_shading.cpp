@@ -97,11 +97,11 @@ int main()
 	unsigned int tex_spec = createDefaultTexture();
 
 	unsigned int indicesCount;
-	unsigned int lightCube = createSphereVAO(indicesCount, 1.0f, 16, 16);
+	unsigned int lightSphere = createSphereVAO(indicesCount, 1.0f, 16, 16);
 
 	// Shaders
 	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
-	Shader lightingShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_lit.frag");
+	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
 	Shader lightCubeShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
 
 	std::vector<unsigned int> textureIDs = { gPosition.id, gNormal.id, gAlbedoSpec.id };
@@ -111,7 +111,7 @@ int main()
 		glm::vec3 Position;
 		float pad1;
 		glm::vec3 Color;
-		float pad2;
+		float Radius;
 	};
 	const unsigned int NR_LIGHTS = 32;
 	Light lights[NR_LIGHTS];
@@ -121,6 +121,7 @@ int main()
 		float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
 		lights[i].Position = glm::vec3(sin(angle) * radius, 0.5f, cos(angle) * radius);
 		lights[i].Color = glm::vec3((sin(angle) + 1.0f) * 0.5f, (cos(angle) + 1.0f) * 0.5f, 0.5f);
+		lights[i].Radius = radius;
 	}
 	UniformBuffer uboLights(sizeof(lights));
 	unsigned int bindingPoint = 0;
@@ -128,6 +129,7 @@ int main()
 	uboLights.bindBufferBase(bindingPoint);
 	uboLights.setData(&lights, sizeof(lights));
 
+	srand(glfwGetTime());
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -135,13 +137,13 @@ int main()
 		processInput(window);
 
 		// light movement test
-		srand(glfwGetTime());
 		float time = glfwGetTime() * 0.5f;
 		radius = 5.0f + sin(time) * (10.0f - 5.0f);
 		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
 			float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
 			lights[i].Position = glm::vec3(sin(fmod(time * angle, 360.0)) * radius, 0.5f + (float)i / (float)NR_LIGHTS * (0.1f - 0.5f), cos(fmod(time * angle, 360.0)) * radius);
 			lights[i].Color = glm::vec3((sin(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, (cos(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, 0.5f);
+			// lights[i].Radius = radius;
 		}
 		uboLights.setData(&lights, sizeof(lights));
 
@@ -174,19 +176,40 @@ int main()
 		gBuffer.unbind();
 
 		// Lighting pass
-		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
+
+		glEnable(GL_CULL_FACE);
+		glCullFace(GL_FRONT);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
 
 		lightingShader.use();
 		lightingShader.setInt("gPosition", 0);
 		lightingShader.setInt("gNormal", 1);
 		lightingShader.setInt("gAlbedoSpec", 2);
 		lightingShader.setVec3("viewPos", camera.getCameraPos());
-
-		glBindVertexArray(frameVAO);
+		lightingShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		lightingShader.setMat4("view", camera.getViewMatrix());
 		bindTextures(textureIDs);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
+			model = glm::mat4(1.0f);
+			model = glm::translate(model, lights[i].Position);
+			model = glm::scale(model, glm::vec3(lights[i].Radius));
+			lightingShader.setMat4("model", model);
+			lightingShader.setVec3("Color", lights[i].Color);
+			lightingShader.setInt("lightIndex", i);
+			glBindVertexArray(lightSphere);
+			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+		}
+
+		// glBindVertexArray(frameVAO);
+		
+		// glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDisable(GL_BLEND);
+		glCullFace(GL_BACK);
 
 		glEnable(GL_DEPTH_TEST);
 		gBuffer.bind();
@@ -194,7 +217,7 @@ int main()
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBlitFramebuffer(0, 0, W_WIDTH, W_HEIGHT, 0, 0, W_WIDTH, W_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
+		/*
 		// forward render light cubes
 		lightCubeShader.use();
 		lightCubeShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
@@ -210,7 +233,7 @@ int main()
 			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 			// glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-
+		*/
 		// checks events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window);

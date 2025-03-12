@@ -20,6 +20,7 @@ layout(std140) uniform LightBlock {
 };
 
 uniform vec3 viewPos;
+uniform int lightIndex;
 
 void main() {
 	vec3 FragPos = texture(gPosition, TexCoords).rgb;
@@ -27,14 +28,22 @@ void main() {
 	vec3 Albedo = texture(gAlbedoSpec, TexCoords).rgb;
 	float Specular = texture(gAlbedoSpec, TexCoords).a;
 
-	vec3 lighting = Albedo * 0.1; // hard-coded ambient component
 	vec3 viewDir = normalize(viewPos - FragPos);
-	for (int i = 0; i < NR_LIGHTS; i++) {
-		// diffuse
-		vec3 lightDir = normalize(lights[i].Position - FragPos);
-		vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Albedo * lights[i].Color;
-		lighting += diffuse;
-	}
 
-	FragColor = vec4(lighting, 1.0);
+	Light currLight = lights[lightIndex];
+	float distance = length(currLight.Position - FragPos);
+	if (distance > currLight.Radius) discard;
+
+	float attenuation = 1.0 - (distance / currLight.Radius);
+    attenuation *= attenuation;
+
+	vec3 lightDir = normalize(currLight.Position - FragPos);
+
+	float diff = max(dot(Normal, lightDir), 0.0);
+    vec3 reflectDir = reflect(-lightDir, Normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0);
+
+    vec3 lighting = (Albedo * currLight.Color * diff + currLight.Color * Specular) * attenuation;
+
+    FragColor = vec4(lighting, 1.0);
 }
