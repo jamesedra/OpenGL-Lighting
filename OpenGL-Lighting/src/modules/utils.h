@@ -29,6 +29,7 @@ unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpac
 
 // vertex array object references
 unsigned int createCubeVAO();
+unsigned int createSphereVAO(unsigned int& indicesCount, float radius = 1.0f, unsigned int sectorCount = 16, unsigned int stackCount = 16);
 unsigned int createQuadVAO();
 unsigned int createFrameVAO();
 

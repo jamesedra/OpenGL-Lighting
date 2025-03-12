@@ -269,6 +269,84 @@ unsigned int createCubeVAO()
 	return cubeVAO;
 }
 
+unsigned int createSphereVAO(unsigned int& indicesCount, float radius, unsigned int sectorCount, unsigned int stackCount) {
+	std::vector<float> vertices;
+	std::vector<unsigned int> indices;
+
+	const float PI = 3.1415926f;
+
+	for (unsigned int i = 0; i <= stackCount; i++) {
+		float stackAngle = PI / 2.0f - i * (PI / (float)stackCount);
+		float xy = radius * cosf(stackAngle);
+		float z = radius * sinf(stackAngle);
+
+		for (unsigned int j = 0; j <= sectorCount; j++) {
+			float sectorAngle = j * (2 * PI / (float)sectorCount);
+
+			float x = xy * cosf(sectorAngle);
+			float y = xy * sinf(sectorAngle);
+			vertices.push_back(x);
+			vertices.push_back(y);
+			vertices.push_back(z);
+
+			float lengthInv = 1.0 / radius;
+			vertices.push_back(x * lengthInv);
+			vertices.push_back(y * lengthInv);
+			vertices.push_back(z * lengthInv);
+
+			float s = (float)j / (float)sectorCount;
+			float t = (float)i / (float)stackCount;
+			vertices.push_back(s);
+			vertices.push_back(t);
+		}
+	}
+
+	for (unsigned int i = 0; i < stackCount; i++) {
+		for (unsigned int j = 0; j < sectorCount; j++) {
+			unsigned int first = i * (sectorCount + 1) + j;
+			unsigned int second = first + sectorCount + 1;
+
+			if (i != 0) {
+				indices.push_back(first);
+				indices.push_back(second);
+				indices.push_back(first + 1);
+			}
+			if (i != (stackCount - 1)) {
+				indices.push_back(first + 1);
+				indices.push_back(second);
+				indices.push_back(second + 1);
+			}
+		}
+	}
+
+	unsigned int VAO, VBO, EBO;
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+
+	glBindVertexArray(VAO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
+
+	indicesCount = indices.size();
+
+	return VAO;
+}
+
 unsigned int createQuadVAO()
 {
 	float vertices[] = {
@@ -391,6 +469,7 @@ unsigned int createFrameVAO()
 
 	return quadVAO;
 }
+
 
 glm::mat4 computeModelMatrix(const glm::vec3& position, const glm::vec3& scale, float angleDegrees, const glm::vec3& rotationAxis)
 {

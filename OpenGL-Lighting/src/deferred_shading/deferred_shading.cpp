@@ -95,7 +95,9 @@ int main()
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
 	unsigned int tex_spec = createDefaultTexture();
-	unsigned int lightCube = createCubeVAO();
+
+	unsigned int indicesCount;
+	unsigned int lightCube = createSphereVAO(indicesCount, 1.0f, 16, 16);
 
 	// Shaders
 	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
@@ -205,7 +207,8 @@ int main()
 			lightCubeShader.setMat4("model", model);
 			lightCubeShader.setVec3("Color", lights[i].Color);
 			glBindVertexArray(lightCube);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+			// glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
 		// checks events and swap buffers
