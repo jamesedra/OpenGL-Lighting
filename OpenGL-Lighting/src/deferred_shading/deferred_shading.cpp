@@ -45,9 +45,9 @@ int main()
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glEnable(GL_DEPTH_TEST);
-	// glFrontFace(GL_CCW);
-	// glCullFace(GL_BACK);
-	// glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
+	glEnable(GL_CULL_FACE);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -101,8 +101,9 @@ int main()
 
 	// Shaders
 	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
+	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
 	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
-	Shader lightCubeShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
+	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
 
 	std::vector<unsigned int> textureIDs = { gPosition.id, gNormal.id, gAlbedoSpec.id };
 	
@@ -143,7 +144,7 @@ int main()
 			float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
 			lights[i].Position = glm::vec3(sin(fmod(time * angle, 360.0)) * radius, 0.5f + (float)i / (float)NR_LIGHTS * (0.1f - 0.5f), cos(fmod(time * angle, 360.0)) * radius);
 			lights[i].Color = glm::vec3((sin(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, (cos(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, 0.5f);
-			// lights[i].Radius = radius;
+			lights[i].Radius = radius;
 		}
 		uboLights.setData(&lights, sizeof(lights));
 
@@ -175,11 +176,21 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		gBuffer.unbind();
 
-		// Lighting pass
+		// Base color pass
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 
+		baseColorShader.use();
+		baseColorShader.setInt("gAlbedoSpec", 0);
+		baseColorShader.setFloat("ambient", 0.5f);
+		baseColorShader.setVec3("viewPos", camera.getCameraPos());
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gAlbedoSpec.id);
+		glBindVertexArray(frameVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		// Lighting pass
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 		glEnable(GL_BLEND);
@@ -204,10 +215,6 @@ int main()
 			glBindVertexArray(lightSphere);
 			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 		}
-
-		// glBindVertexArray(frameVAO);
-		
-		// glDrawArrays(GL_TRIANGLES, 0, 6);
 		glDisable(GL_BLEND);
 		glCullFace(GL_BACK);
 
@@ -217,23 +224,23 @@ int main()
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBlitFramebuffer(0, 0, W_WIDTH, W_HEIGHT, 0, 0, W_WIDTH, W_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		/*
-		// forward render light cubes
-		lightCubeShader.use();
-		lightCubeShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
-		lightCubeShader.setMat4("view", camera.getViewMatrix());
-		
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		lightSphereShader.use();
+		lightSphereShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		lightSphereShader.setMat4("view", camera.getViewMatrix());
+
 		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lights[i].Position);
 			model = glm::scale(model, glm::vec3(0.25f));
-			lightCubeShader.setMat4("model", model);
-			lightCubeShader.setVec3("Color", lights[i].Color);
-			glBindVertexArray(lightCube);
+			lightSphereShader.setMat4("model", model);
+			lightSphereShader.setVec3("Color", lights[i].Color);
+			glBindVertexArray(lightSphere);
 			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-			// glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
-		*/
+		glDisable(GL_BLEND);
 		// checks events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window);

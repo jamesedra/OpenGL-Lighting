@@ -218,6 +218,7 @@
     <None Include="shaders\emissive_color.frag" />
     <None Include="shaders\deferred\def_lightvolume.vert" />
     <None Include="shaders\deferred\def_lightvolume.frag" />
+    <None Include="shaders\deferred\def_basecolor.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

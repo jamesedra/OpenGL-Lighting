@@ -43,7 +43,7 @@ void main() {
     vec3 reflectDir = reflect(-lightDir, Normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16.0);
 
-    vec3 lighting = (Albedo * currLight.Color * diff + currLight.Color * Specular) * attenuation;
+    vec3 lighting = (Albedo * currLight.Color * diff + currLight.Color * spec) * attenuation;
 
     FragColor = vec4(lighting, 1.0);
 }
