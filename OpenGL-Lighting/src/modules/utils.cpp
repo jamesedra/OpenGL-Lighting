@@ -496,3 +496,8 @@ glm::vec3 getVertexPosition(const float* vertices, int index) {
 glm::vec2 getUVPosition(const float* vertices, int index) {
 	return glm::vec2(vertices[index], vertices[index + 1]);
 }
+
+float lerp(float a, float b, float t)
+{
+	return a + t * (b - a);
+}

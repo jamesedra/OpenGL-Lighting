@@ -41,3 +41,5 @@ void bindTextures(const std::vector<unsigned int>& textures, GLenum textureTarge
 glm::mat2x3 getTangentBitangentMatrix(glm::vec3 positions[3], glm::vec2 texCoords[3]);
 glm::vec3 getVertexPosition(const float* vertices, int index);
 glm::vec2 getUVPosition(const float* vertices, int index);
+
+float lerp(float a, float b, float t);

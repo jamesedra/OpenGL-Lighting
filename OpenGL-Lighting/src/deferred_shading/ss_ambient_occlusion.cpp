@@ -15,11 +15,12 @@
 #include "../modules/texture.h"
 
 #include "../../stb/stb_image.h"
+#include <random>
 
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int deferred_main()
+int main()
 {
 	// initialization phase
 	glfwInit();
@@ -27,7 +28,7 @@ int deferred_main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "Deferred Shading", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "SSAO", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -63,28 +64,26 @@ int deferred_main()
 
 	// G-Buffer
 	Framebuffer gBuffer(W_WIDTH, W_HEIGHT);
-
-	// position color buffer
-	Texture gPosition(W_WIDTH, W_HEIGHT, GL_RGBA16F, GL_RGBA);
-	gPosition.setTexFilter(GL_NEAREST);
+	Texture gPosition(W_WIDTH, W_HEIGHT, GL_RGBA16F, GL_RGBA, GL_NEAREST, GL_CLAMP_TO_EDGE);
 	gBuffer.attachTexture2D(gPosition, GL_COLOR_ATTACHMENT0);
-
-	// normal color buffer
 	Texture gNormal(W_WIDTH, W_HEIGHT, GL_RGBA16F, GL_RGBA);
 	gNormal.setTexFilter(GL_NEAREST);
 	gBuffer.attachTexture2D(gNormal, GL_COLOR_ATTACHMENT1);
-
-	// specular color buffer
 	Texture gAlbedoSpec(W_WIDTH, W_HEIGHT, GL_RGBA, GL_RGBA);
 	gAlbedoSpec.setTexFilter(GL_NEAREST);
 	gBuffer.attachTexture2D(gAlbedoSpec, GL_COLOR_ATTACHMENT2);
-
 	// texture and renderbuffer attachments
 	gBuffer.bind();
 	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 	glDrawBuffers(3, attachments);
 	gBuffer.attachRenderbuffer(GL_DEPTH_STENCIL_ATTACHMENT, GL_DEPTH24_STENCIL8);
-	
+
+	// SSAO buffer
+	Framebuffer ssaoBuffer(W_WIDTH, W_HEIGHT);
+	Texture ssaoColor(W_WIDTH, W_HEIGHT, GL_RED, GL_RED);
+	ssaoColor.setTexFilter(GL_NEAREST);
+	ssaoBuffer.attachTexture2D(ssaoColor, GL_COLOR_ATTACHMENT0);
+
 	//stbi_set_flip_vertically_on_load(true); // set if needed
 
 	// output frame
@@ -95,20 +94,21 @@ int deferred_main()
 	unsigned int floorVAO = createQuadVAO();
 	unsigned int tex_diff = loadTexture("resources/textures/brickwall.jpg", true, TextureColorSpace::sRGB);
 	unsigned int tex_spec = createDefaultTexture();
-
 	unsigned int indicesCount;
 	unsigned int lightSphere = createSphereVAO(indicesCount, 1.0f, 16, 16);
 
 	// Shaders
-	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf.frag");
+	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf_ssao.frag");
+	Shader ssaoShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf_ssao.frag");
 	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
 	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
 	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
 
-	std::vector<unsigned int> textureIDs = { gPosition.id, gNormal.id, gAlbedoSpec.id };
-	
+	std::vector<unsigned int> gBufferTex = { gPosition.id, gNormal.id, gAlbedoSpec.id };
+
 	// Lighting data
-	struct Light {
+	struct Light
+	{
 		glm::vec3 Position;
 		float pad1;
 		glm::vec3 Color;
@@ -118,7 +118,8 @@ int deferred_main()
 	Light lights[NR_LIGHTS];
 
 	float radius = 5.0f;
-	for (unsigned int i = 0; i < NR_LIGHTS; i++) {
+	for (unsigned int i = 0; i < NR_LIGHTS; i++)
+	{
 		float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
 		lights[i].Position = glm::vec3(sin(angle) * radius, 0.5f, cos(angle) * radius);
 		lights[i].Color = glm::vec3((sin(angle) + 1.0f) * 0.5f, (cos(angle) + 1.0f) * 0.5f, 0.5f);
@@ -130,6 +131,41 @@ int deferred_main()
 	uboLights.bindBufferBase(bindingPoint);
 	uboLights.setData(&lights, sizeof(lights));
 
+	// Normal oriented hemisphere
+	std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
+	std::default_random_engine generator;
+	std::vector<glm::vec3> ssaoKernel;
+
+	for (unsigned int i = 0; i < 64; ++i)
+	{
+		glm::vec3 sample(
+			randomFloats(generator) * 2.0 - 1.0,
+			randomFloats(generator) * 2.0 - 1.0,
+			randomFloats(generator) // z-axis only range 0 to 1
+		);
+		sample = glm::normalize(sample);
+		sample *= randomFloats(generator);
+
+		// distribute samples nearer to the fragment
+		float scale = (float)i / 64.0;
+		scale = lerp(0.1f, 1.0f, scale * scale);
+		sample *= scale;
+		ssaoKernel.push_back(sample);
+	}
+
+	// Random rotation vector texture
+	std::vector<glm::vec3> ssaoNoise;
+	for (unsigned int i = 0; i < 16; i++)
+	{
+		glm::vec3 noise(
+			randomFloats(generator) * 2.0 - 1.0,
+			randomFloats(generator) * 2.0 - 1.0,
+			0.0f
+		);
+		ssaoNoise.push_back(noise);
+	}
+	Texture noiseTexture(4, 4, GL_RGBA16F, GL_RGB, GL_NEAREST, GL_REPEAT, &ssaoNoise[0]);
+
 	srand(glfwGetTime());
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -137,22 +173,11 @@ int deferred_main()
 		// input
 		processInput(window);
 
-		// light movement test
-		float time = glfwGetTime() * 0.5f;
-		radius = 5.0f + sin(time) * (10.0f - 5.0f);
-		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
-			float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
-			lights[i].Position = glm::vec3(sin(fmod(time * angle, 360.0)) * radius, 0.5f + (float)i / (float)NR_LIGHTS * (0.1f - 0.5f), cos(fmod(time * angle, 360.0)) * radius);
-			lights[i].Color = glm::vec3((sin(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, (cos(fmod(time * angle, 360.0)) + 1.0f) * 0.5f, 0.5f);
-			lights[i].Radius = radius;
-		}
-		uboLights.setData(&lights, sizeof(lights));
-
-		// Geometry pass
 		gBuffer.bind();
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+		// Geometry pass
 		gBufferShader.use();
 		gBufferShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		gBufferShader.setMat4("view", camera.getViewMatrix());
@@ -176,19 +201,15 @@ int deferred_main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		gBuffer.unbind();
 
-		// Base color pass
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_DEPTH_TEST);
+		// SSAO pass
+		ssaoBuffer.bind();
+		glClear(GL_COLOR_BUFFER_BIT);
+		bindTextures(gBufferTex);
 
-		baseColorShader.use();
-		baseColorShader.setInt("gAlbedoSpec", 0);
-		baseColorShader.setFloat("ambient", 0.5f);
-		baseColorShader.setVec3("viewPos", camera.getCameraPos());
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gAlbedoSpec.id);
-		glBindVertexArray(frameVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		ssaoShader.use();
+		ssaoShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		// render quad here
+		ssaoBuffer.unbind();
 
 		// Lighting pass
 		glEnable(GL_CULL_FACE);
@@ -203,9 +224,12 @@ int deferred_main()
 		lightingShader.setVec3("viewPos", camera.getCameraPos());
 		lightingShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		lightingShader.setMat4("view", camera.getViewMatrix());
-		bindTextures(textureIDs);
+		bindTextures(gBufferTex);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, ssaoColor);
 
-		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
+		for (unsigned int i = 0; i < NR_LIGHTS; i++)
+		{
 			model = glm::mat4(1.0f);
 			model = glm::translate(model, lights[i].Position);
 			model = glm::scale(model, glm::vec3(lights[i].Radius));
@@ -225,22 +249,7 @@ int deferred_main()
 		glBlitFramebuffer(0, 0, W_WIDTH, W_HEIGHT, 0, 0, W_WIDTH, W_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		lightSphereShader.use();
-		lightSphereShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
-		lightSphereShader.setMat4("view", camera.getViewMatrix());
 
-		for (unsigned int i = 0; i < NR_LIGHTS; i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, lights[i].Position);
-			model = glm::scale(model, glm::vec3(0.25f));
-			lightSphereShader.setMat4("model", model);
-			lightSphereShader.setVec3("Color", lights[i].Color);
-			glBindVertexArray(lightSphere);
-			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-		}
-		glDisable(GL_BLEND);
 		// checks events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window);

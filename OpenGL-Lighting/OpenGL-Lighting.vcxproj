@@ -135,6 +135,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\deferred_shading\deferred_shading.cpp" />
+    <ClCompile Include="src\deferred_shading\ss_ambient_occlusion.cpp" />
     <ClCompile Include="src\HDR\bloom_test.cpp" />
     <ClCompile Include="src\HDR\tonemapping_test.cpp" />
     <ClCompile Include="src\modules\shader.cpp" />
@@ -207,6 +208,7 @@
     <None Include="shaders\blinn_phong.frag" />
     <None Include="shaders\deferred\def_basecolor.frag" />
     <None Include="shaders\deferred\def_gbf.frag" />
+    <None Include="shaders\deferred\def_gbf_ssao.frag" />
     <None Include="shaders\deferred\def_lightvolume.frag" />
     <None Include="shaders\deferred\def_lightvolume.vert" />
     <None Include="shaders\deferred\def_lit.frag" />

@@ -60,6 +60,9 @@
     <ClCompile Include="src\deferred_shading\deferred_shading.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\deferred_shading\ss_ambient_occlusion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h">
@@ -219,6 +222,7 @@
     <None Include="shaders\deferred\def_lightvolume.vert" />
     <None Include="shaders\deferred\def_lightvolume.frag" />
     <None Include="shaders\deferred\def_basecolor.frag" />
+    <None Include="shaders\deferred\def_gbf_ssao.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
