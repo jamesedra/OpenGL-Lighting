@@ -213,6 +213,7 @@
     <None Include="shaders\deferred\def_lightvolume.vert" />
     <None Include="shaders\deferred\def_lit.frag" />
     <None Include="shaders\deferred\def_ssao.frag" />
+    <None Include="shaders\deferred\def_gbf_ssao.vert" />
     <None Include="shaders\deprecated\deprecated_blinn_phong.frag" />
     <None Include="shaders\emissive_color.frag" />
     <None Include="shaders\empty.frag" />

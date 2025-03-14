@@ -97,40 +97,6 @@ int main()
 	unsigned int indicesCount;
 	unsigned int lightSphere = createSphereVAO(indicesCount, 1.0f, 16, 16);
 
-	// Shaders
-	Shader gBufferShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf_ssao.frag");
-	Shader ssaoShader("shaders/base_vertex.vert", "shaders/deferred/def_gbf_ssao.frag");
-	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
-	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
-	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
-
-	std::vector<unsigned int> gBufferTex = { gPosition.id, gNormal.id, gAlbedoSpec.id };
-
-	// Lighting data
-	struct Light
-	{
-		glm::vec3 Position;
-		float pad1;
-		glm::vec3 Color;
-		float Radius;
-	};
-	const unsigned int NR_LIGHTS = 32;
-	Light lights[NR_LIGHTS];
-
-	float radius = 5.0f;
-	for (unsigned int i = 0; i < NR_LIGHTS; i++)
-	{
-		float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
-		lights[i].Position = glm::vec3(sin(angle) * radius, 0.5f, cos(angle) * radius);
-		lights[i].Color = glm::vec3((sin(angle) + 1.0f) * 0.5f, (cos(angle) + 1.0f) * 0.5f, 0.5f);
-		lights[i].Radius = radius;
-	}
-	UniformBuffer uboLights(sizeof(lights));
-	unsigned int bindingPoint = 0;
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(lightingShader.ID, "LightBlock");
-	uboLights.bindBufferBase(bindingPoint);
-	uboLights.setData(&lights, sizeof(lights));
-
 	// Normal oriented hemisphere
 	std::uniform_real_distribution<float> randomFloats(0.0, 1.0);
 	std::default_random_engine generator;
@@ -166,6 +132,42 @@ int main()
 	}
 	Texture noiseTexture(4, 4, GL_RGBA16F, GL_RGB, GL_NEAREST, GL_REPEAT, &ssaoNoise[0]);
 
+	// Shaders
+	Shader gBufferShader("shaders/deferred/def_gbf_ssao.vert", "shaders/deferred/def_gbf_ssao.frag");
+	Shader ssaoShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_ssao.frag");
+	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
+	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
+	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
+
+	std::vector<unsigned int> gBufferTex = { gPosition.id, gNormal.id, gAlbedoSpec.id };
+	std::vector<unsigned int> aoBufferTex = { gPosition.id, gNormal.id, noiseTexture.id };
+	std::vector<unsigned int> lightingPassTex = { gPosition.id, gNormal.id, gAlbedoSpec.id, ssaoColor.id };
+
+	// Lighting data
+	struct Light
+	{
+		glm::vec3 Position;
+		float pad1;
+		glm::vec3 Color;
+		float Radius;
+	};
+	const unsigned int NR_LIGHTS = 32;
+	Light lights[NR_LIGHTS];
+
+	float radius = 5.0f;
+	for (unsigned int i = 0; i < NR_LIGHTS; i++)
+	{
+		float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
+		lights[i].Position = glm::vec3(sin(angle) * radius, 0.5f, cos(angle) * radius);
+		lights[i].Color = glm::vec3((sin(angle) + 1.0f) * 0.5f, (cos(angle) + 1.0f) * 0.5f, 0.5f);
+		lights[i].Radius = radius;
+	}
+	UniformBuffer uboLights(sizeof(lights));
+	unsigned int bindingPoint = 0;
+	unsigned int uniformBlockIndex = glGetUniformBlockIndex(lightingShader.ID, "LightBlock");
+	uboLights.bindBufferBase(bindingPoint);
+	uboLights.setData(&lights, sizeof(lights));
+
 	srand(glfwGetTime());
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -173,11 +175,11 @@ int main()
 		// input
 		processInput(window);
 
+		// Geometry pass
 		gBuffer.bind();
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		// Geometry pass
 		gBufferShader.use();
 		gBufferShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		gBufferShader.setMat4("view", camera.getViewMatrix());
@@ -201,15 +203,29 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		gBuffer.unbind();
 
-		// SSAO pass
-		ssaoBuffer.bind();
-		glClear(GL_COLOR_BUFFER_BIT);
-		bindTextures(gBufferTex);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
 
+		// SSAO pass
+		// ssaoBuffer.bind();
+		// glClear(GL_COLOR_BUFFER_BIT);
 		ssaoShader.use();
 		ssaoShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
-		// render quad here
-		ssaoBuffer.unbind();
+		ssaoShader.setInt("gPosition", 0);
+		ssaoShader.setInt("gNormal", 1);
+		ssaoShader.setInt("texNoise", 2);
+		// send kernel samples to shader
+		for (unsigned int i = 0; i < 64; i++) {
+			ssaoShader.setVec3("samples[" + std::to_string(i) + "]", ssaoKernel[i]);
+		}
+		// render quad
+		bindTextures(aoBufferTex);
+		glBindVertexArray(frameVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		//ssaoBuffer.unbind();
+		/*
 
 		// Lighting pass
 		glEnable(GL_CULL_FACE);
@@ -221,12 +237,13 @@ int main()
 		lightingShader.setInt("gPosition", 0);
 		lightingShader.setInt("gNormal", 1);
 		lightingShader.setInt("gAlbedoSpec", 2);
+		lightingShader.setInt("ssaoTex", 3);
 		lightingShader.setVec3("viewPos", camera.getCameraPos());
 		lightingShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		lightingShader.setMat4("view", camera.getViewMatrix());
-		bindTextures(gBufferTex);
-		glActiveTexture(GL_TEXTURE3);
-		glBindTexture(GL_TEXTURE_2D, ssaoColor);
+		bindTextures(lightingPassTex);
+		// glActiveTexture(GL_TEXTURE3);
+		// glBindTexture(GL_TEXTURE_2D, ssaoColor.id);
 
 		for (unsigned int i = 0; i < NR_LIGHTS; i++)
 		{
@@ -241,6 +258,7 @@ int main()
 		}
 		glDisable(GL_BLEND);
 		glCullFace(GL_BACK);
+		*/
 
 		glEnable(GL_DEPTH_TEST);
 		gBuffer.bind();

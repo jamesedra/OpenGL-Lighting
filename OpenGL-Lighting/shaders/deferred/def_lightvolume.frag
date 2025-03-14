@@ -6,6 +6,7 @@ in vec2 TexCoords;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
+uniform sampler2D ssaoTex;
 
 struct Light {
 	vec3 Position;
@@ -45,5 +46,6 @@ void main() {
 
     vec3 lighting = (Albedo * currLight.Color * diff + currLight.Color * spec) * attenuation;
 
-    FragColor = vec4(lighting, 1.0);
+    // FragColor = vec4(lighting, 1.0);
+	FragColor = vec4(vec3(texture(ssaoTex, TexCoords).r), 1.0);
 }
