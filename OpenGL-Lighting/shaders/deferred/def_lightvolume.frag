@@ -46,6 +46,6 @@ void main() {
 
     vec3 lighting = (Albedo * currLight.Color * diff + currLight.Color * spec) * attenuation;
 
-    // FragColor = vec4(lighting, 1.0);
-	FragColor = vec4(vec3(texture(ssaoTex, TexCoords).r), 1.0);
+    FragColor = vec4(lighting, 1.0);
+	// FragColor = vec4(vec3(texture(ssaoTex, TexCoords).r), 1.0);
 }

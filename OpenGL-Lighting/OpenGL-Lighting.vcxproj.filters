@@ -226,6 +226,7 @@
     <None Include="shaders\deferred\def_ssao.frag" />
     <None Include="shaders\deferred\def_gbf_ssao.vert" />
     <None Include="shaders\deferred\def_ssao_blur.frag" />
+    <None Include="shaders\deferred\def_lit_ao.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

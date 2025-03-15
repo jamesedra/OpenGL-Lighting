@@ -143,37 +143,12 @@ int main()
 	Shader ssaoShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_ssao.frag");
 	Shader ssaoBlurShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_ssao_blur.frag");
 	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
-	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
+	Shader lightingShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_lit_ao.frag");
 	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
 
 	std::vector<unsigned int> gBufferTex = { gPosition.id, gNormal.id, gAlbedoSpec.id };
 	std::vector<unsigned int> aoBufferTex = { gPosition.id, gNormal.id, noiseTexture.id };
-	std::vector<unsigned int> lightingPassTex = { gPosition.id, gNormal.id, gAlbedoSpec.id, ssaoColor.id };
-
-	// Lighting data
-	struct Light
-	{
-		glm::vec3 Position;
-		float pad1;
-		glm::vec3 Color;
-		float Radius;
-	};
-	const unsigned int NR_LIGHTS = 32;
-	Light lights[NR_LIGHTS];
-
-	float radius = 5.0f;
-	for (unsigned int i = 0; i < NR_LIGHTS; i++)
-	{
-		float angle = (float)i / (float)NR_LIGHTS * 2.0f * glm::pi<float>();
-		lights[i].Position = glm::vec3(sin(angle) * radius, 0.5f, cos(angle) * radius);
-		lights[i].Color = glm::vec3((sin(angle) + 1.0f) * 0.5f, (cos(angle) + 1.0f) * 0.5f, 0.5f);
-		lights[i].Radius = radius;
-	}
-	UniformBuffer uboLights(sizeof(lights));
-	unsigned int bindingPoint = 0;
-	unsigned int uniformBlockIndex = glGetUniformBlockIndex(lightingShader.ID, "LightBlock");
-	uboLights.bindBufferBase(bindingPoint);
-	uboLights.setData(&lights, sizeof(lights));
+	std::vector<unsigned int> lightingPassTex = { gPosition.id, gNormal.id, gAlbedoSpec.id, ssaoBlurColor.id };
 
 	srand(glfwGetTime());
 	// render loop
@@ -213,7 +188,7 @@ int main()
 		// SSAO pass
 		ssaoBuffer.bind();
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
 		ssaoShader.use();
 		ssaoShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
@@ -234,46 +209,35 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		// SSAO blur pass
+		ssaoBlurBuffer.bind();
 		ssaoBlurShader.use();
 		ssaoBlurShader.setInt("ssaoInput", 0);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, ssaoColor.id);
 		glBindVertexArray(frameVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		ssaoBlurBuffer.unbind(); 
 
-		/*
 		// Lighting pass
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_FRONT);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-
 		lightingShader.use();
+		// input matrices
+		lightingShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		lightingShader.setMat4("view", camera.getViewMatrix());
+		// input passes
 		lightingShader.setInt("gPosition", 0);
 		lightingShader.setInt("gNormal", 1);
 		lightingShader.setInt("gAlbedoSpec", 2);
-		lightingShader.setInt("ssaoTex", 3);
-		lightingShader.setVec3("viewPos", camera.getCameraPos());
-		lightingShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
-		lightingShader.setMat4("view", camera.getViewMatrix());
-		bindTextures(lightingPassTex);
-		// glActiveTexture(GL_TEXTURE3);
-		// glBindTexture(GL_TEXTURE_2D, ssaoColor.id);
+		lightingShader.setInt("ssao", 3);
+		// light uniforms
+		lightingShader.setVec3("light.Position", glm::vec3(1.0f));
+		lightingShader.setVec3("light.Color", glm::vec3(1.0f));
+		lightingShader.setFloat("light.Linear", 0.0014f);
+		lightingShader.setFloat("light.Quadratic", 0.07f);
+		lightingShader.setFloat("light.Radius", 1.0f);
 
-		for (unsigned int i = 0; i < NR_LIGHTS; i++)
-		{
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, lights[i].Position);
-			model = glm::scale(model, glm::vec3(lights[i].Radius));
-			lightingShader.setMat4("model", model);
-			lightingShader.setVec3("Color", lights[i].Color);
-			lightingShader.setInt("lightIndex", i);
-			glBindVertexArray(lightSphere);
-			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-		}
-		glDisable(GL_BLEND);
-		glCullFace(GL_BACK);
-		*/
+		bindTextures(lightingPassTex);
+		glBindVertexArray(frameVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glEnable(GL_DEPTH_TEST);
 		gBuffer.bind();
