@@ -1,5 +1,5 @@
 #version 330 core
-out vec4 FragColor;// change to float
+out float FragColor;
 
 in vec2 TexCoords;
 
@@ -50,5 +50,5 @@ void main() {
 
 	occlusion = 1.0 - (occlusion / kernelSize); // one minus normalize based on kernel size
 
-	FragColor = vec4(vec3(occlusion), 1.0); // change to float
+	FragColor = occlusion;
 }

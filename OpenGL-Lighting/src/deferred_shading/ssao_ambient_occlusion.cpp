@@ -84,6 +84,12 @@ int main()
 	ssaoColor.setTexFilter(GL_NEAREST);
 	ssaoBuffer.attachTexture2D(ssaoColor, GL_COLOR_ATTACHMENT0);
 
+	// SSAO blur framebuffer
+	Framebuffer ssaoBlurBuffer(W_WIDTH, W_HEIGHT);
+	Texture ssaoBlurColor(W_WIDTH, W_HEIGHT, GL_RED, GL_RED);
+	ssaoBlurColor.setTexFilter(GL_NEAREST);
+	ssaoBlurBuffer.attachTexture2D(ssaoBlurColor, GL_COLOR_ATTACHMENT0);
+
 	//stbi_set_flip_vertically_on_load(true); // set if needed
 
 	// output frame
@@ -135,6 +141,7 @@ int main()
 	// Shaders
 	Shader gBufferShader("shaders/deferred/def_gbf_ssao.vert", "shaders/deferred/def_gbf_ssao.frag");
 	Shader ssaoShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_ssao.frag");
+	Shader ssaoBlurShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_ssao_blur.frag");
 	Shader baseColorShader("shaders/post_process/framebuffer_quad.vert", "shaders/deferred/def_basecolor.frag");
 	Shader lightingShader("shaders/deferred/def_lightvolume.vert", "shaders/deferred/def_lightvolume.frag");
 	Shader lightSphereShader("shaders/base_vertex.vert", "shaders/emissive_color.frag");
@@ -203,13 +210,11 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		gBuffer.unbind();
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glDisable(GL_DEPTH_TEST);
-
 		// SSAO pass
-		// ssaoBuffer.bind();
-		// glClear(GL_COLOR_BUFFER_BIT);
+		ssaoBuffer.bind();
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+		glDisable(GL_DEPTH_TEST);
 		ssaoShader.use();
 		ssaoShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		ssaoShader.setInt("gPosition", 0);
@@ -223,10 +228,20 @@ int main()
 		bindTextures(aoBufferTex);
 		glBindVertexArray(frameVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		ssaoBuffer.unbind();
 
-		//ssaoBuffer.unbind();
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		// SSAO blur pass
+		ssaoBlurShader.use();
+		ssaoBlurShader.setInt("ssaoInput", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ssaoColor.id);
+		glBindVertexArray(frameVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 		/*
-
 		// Lighting pass
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
@@ -266,7 +281,6 @@ int main()
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 		glBlitFramebuffer(0, 0, W_WIDTH, W_HEIGHT, 0, 0, W_WIDTH, W_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
 
 		// checks events and swap buffers
 		glfwPollEvents();
