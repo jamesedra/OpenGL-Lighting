@@ -20,7 +20,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int main()
+int ssao_main()
 {
 	// initialization phase
 	glfwInit();

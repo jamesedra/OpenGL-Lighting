@@ -141,6 +141,7 @@
     <ClCompile Include="src\modules\shader.cpp" />
     <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
     <ClCompile Include="src\parallax\parallax.cpp" />
+    <ClCompile Include="src\PBR\pbr_test.cpp" />
     <ClCompile Include="src\shadow_mapping\directional_shadow.cpp" />
     <ClCompile Include="src\modules\camera.cpp" />
     <ClCompile Include="src\modules\glad.c" />
@@ -230,6 +231,7 @@
     <None Include="shaders\simple_depth.frag" />
     <None Include="shaders\simple_depth.geom" />
     <None Include="shaders\simple_depth.vert" />
+    <None Include="shaders\test.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

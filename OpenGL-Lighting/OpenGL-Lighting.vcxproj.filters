@@ -63,6 +63,9 @@
     <ClCompile Include="src\deferred_shading\ssao_ambient_occlusion.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\PBR\pbr_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h">
@@ -227,6 +230,7 @@
     <None Include="shaders\deferred\def_gbf_ssao.vert" />
     <None Include="shaders\deferred\def_ssao_blur.frag" />
     <None Include="shaders\deferred\def_lit_ao.frag" />
+    <None Include="shaders\test.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
