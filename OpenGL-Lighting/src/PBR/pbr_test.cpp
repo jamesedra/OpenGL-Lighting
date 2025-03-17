@@ -84,12 +84,12 @@ int main()
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
 		float time = glfwGetTime();
-		glm::vec3 lightPos = glm::vec3(1.0f);
+		glm::vec3 lightPos = glm::vec3(0.5f);
 		// light uniforms
 		PBRShader.setVec3("dirLight.position", glm::vec3(sin(time + lightPos.x), lightPos.y, cos(time + lightPos.z)));
 
 		PBRShader.setVec3("dirLight.color", glm::vec3(1.0f));
-		PBRShader.setFloat("dirLight.intensity", 1.0f);
+		PBRShader.setFloat("dirLight.intensity", 2.0f);
 
 		// material uniforms
 		PBRShader.setVec3("material.baseColor", glm::vec3(1.0f, 0.0f, 1.0f));
