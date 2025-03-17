@@ -64,9 +64,9 @@ int main()
 
 	// Objects
 	unsigned int indicesCount;
-	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 16, 16);
+	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
 
-	Shader PBRShader("shaders/base_vertex.vert", "shaders/test.frag");
+	Shader PBRShader("shaders/base_vertex.vert", "shaders/pbr/pbr_test.frag");
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -81,6 +81,19 @@ int main()
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		PBRShader.setMat4("view", camera.getViewMatrix());
 		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+		PBRShader.setVec3("viewPos", camera.getCameraPos());
+
+		float time = glfwGetTime();
+		glm::vec3 lightPos = glm::vec3(1.0f);
+		// light uniforms
+		PBRShader.setVec3("dirLight.position", glm::vec3(sin(time + lightPos.x), lightPos.y, cos(time + lightPos.z)));
+
+		PBRShader.setVec3("dirLight.color", glm::vec3(1.0f));
+		PBRShader.setFloat("dirLight.intensity", 1.0f);
+
+		// material uniforms
+		PBRShader.setVec3("material.baseColor", glm::vec3(1.0f, 0.0f, 1.0f));
+		PBRShader.setFloat("material.roughness", 0.1f);
 
 		glBindVertexArray(sphere);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);

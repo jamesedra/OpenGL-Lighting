@@ -221,6 +221,7 @@
     <None Include="shaders\emissive_color.frag" />
     <None Include="shaders\empty.frag" />
     <None Include="shaders\base_lit_mrt.frag" />
+    <None Include="shaders\pbr\pbr_test.frag" />
     <None Include="shaders\post_process\bloom.frag" />
     <None Include="shaders\post_process\framebuffer_quad.vert" />
     <None Include="shaders\linear_depth.frag" />
