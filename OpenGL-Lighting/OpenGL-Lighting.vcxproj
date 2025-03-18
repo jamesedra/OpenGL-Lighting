@@ -141,6 +141,7 @@
     <ClCompile Include="src\modules\shader.cpp" />
     <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
     <ClCompile Include="src\parallax\parallax.cpp" />
+    <ClCompile Include="src\PBR\pbr_point.cpp" />
     <ClCompile Include="src\PBR\pbr_test.cpp" />
     <ClCompile Include="src\shadow_mapping\directional_shadow.cpp" />
     <ClCompile Include="src\modules\camera.cpp" />
@@ -221,6 +222,8 @@
     <None Include="shaders\emissive_color.frag" />
     <None Include="shaders\empty.frag" />
     <None Include="shaders\base_lit_mrt.frag" />
+    <None Include="shaders\pbr\pbr_base.vert" />
+    <None Include="shaders\pbr\pbr_points.frag" />
     <None Include="shaders\pbr\pbr_test.frag" />
     <None Include="shaders\post_process\bloom.frag" />
     <None Include="shaders\post_process\framebuffer_quad.vert" />

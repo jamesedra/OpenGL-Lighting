@@ -66,6 +66,9 @@
     <ClCompile Include="src\PBR\pbr_test.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\PBR\pbr_point.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\camera.h">
@@ -232,6 +235,8 @@
     <None Include="shaders\deferred\def_lit_ao.frag" />
     <None Include="shaders\test.frag" />
     <None Include="shaders\pbr\pbr_test.frag" />
+    <None Include="shaders\pbr\pbr_points.frag" />
+    <None Include="shaders\pbr\pbr_base.vert" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

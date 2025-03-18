@@ -20,7 +20,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int pbr_test_main()
+int main()
 {
 	// initialization phase
 	glfwInit();
@@ -66,7 +66,21 @@ int pbr_test_main()
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
 
-	Shader PBRShader("shaders/base_vertex.vert", "shaders/pbr/pbr_test.frag");
+	Shader PBRShader("shaders/pbr/pbr_base.vert", "shaders/pbr/pbr_points.frag");
+
+	glm::vec3 lightPositions[4] = {
+		glm::vec3(1.5f, 1.5f, 1.5f),
+		glm::vec3(-1.5f, 1.5f, 1.5f),
+		glm::vec3(1.5f, 1.5f, -1.5f),
+		glm::vec3(-1.5f, 1.5f, -1.5f)
+	};
+
+	glm::vec3 lightColors[4] = {
+		glm::vec3(10.0f, 10.0f, 10.0f),
+		glm::vec3(10.0f, 5.0f, 0.0f),
+		glm::vec3(5.0f, 5.0f, 10.0f),
+		glm::vec3(5.0f, 10.0f, 5.0f)
+	};
 
 	// render loop
 	while (!glfwWindowShouldClose(window))
@@ -74,7 +88,7 @@ int pbr_test_main()
 		// input
 		processInput(window);
 
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		PBRShader.use();
@@ -83,21 +97,21 @@ int pbr_test_main()
 		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
-		float time = glfwGetTime();
-		glm::vec3 lightPos = glm::vec3(0.5f);
-		// light uniforms
-		PBRShader.setVec3("dirLight.position", glm::vec3(sin(time + lightPos.x), lightPos.y, cos(time + lightPos.z)));
-
-		PBRShader.setVec3("dirLight.color", glm::vec3(1.0f));
-		PBRShader.setFloat("dirLight.intensity", 2.0f);
-
 		// material uniforms
-		PBRShader.setVec3("material.baseColor", glm::vec3(1.0f, 0.0f, 1.0f));
-		PBRShader.setFloat("material.roughness", 0.1f);
+		PBRShader.setVec3("material.albedo", glm::vec3(1.0f, 0.0f, 0.0f));
+		PBRShader.setFloat("material.metallic", 1.0f);
+		PBRShader.setFloat("material.roughness", 0.2f);
+		PBRShader.setFloat("material.ao", 0.0f);
+
+		// light uniforms
+		for (int i = 0; i < 4; ++i) {
+			PBRShader.setVec3("lights[" + std::to_string(i) + "].position", lightPositions[i]);
+			PBRShader.setVec3("lights[" + std::to_string(i) + "].color", lightColors[i]);
+		}
 
 		glBindVertexArray(sphere);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-		
+
 		// checks events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window);
