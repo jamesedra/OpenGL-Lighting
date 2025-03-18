@@ -66,13 +66,22 @@ int main()
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
 
-	Shader PBRShader("shaders/pbr/pbr_base.vert", "shaders/pbr/pbr_points.frag");
+	// Textures
+	unsigned int tex_albedo = loadTexture("resources/textures/pbr/rusted_iron/albedo.png", true, TextureColorSpace::sRGB);
+	unsigned int tex_normal = loadTexture("resources/textures/pbr/rusted_iron/normal.png", true, TextureColorSpace::Linear);
+	unsigned int tex_metallic = loadTexture("resources/textures/pbr/rusted_iron/metallic.png", true, TextureColorSpace::Linear);
+	unsigned int tex_roughness = loadTexture("resources/textures/pbr/rusted_iron/roughness.png", true, TextureColorSpace::Linear);
+	unsigned int tex_ao = loadTexture("resources/textures/pbr/rusted_iron/ao.png", true, TextureColorSpace::Linear);
+
+	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao };
+
+	Shader PBRShader("shaders/pbr/pbr_base.vert", "shaders/pbr/pbr_textures.frag");
 
 	glm::vec3 lightPositions[4] = {
-		glm::vec3(1.5f, 1.5f, 1.5f),
-		glm::vec3(-1.5f, 1.5f, 1.5f),
-		glm::vec3(1.5f, 1.5f, -1.5f),
-		glm::vec3(-1.5f, 1.5f, -1.5f)
+		glm::vec3(1.5f, 0.0f, 1.5f),
+		glm::vec3(-1.5f, 0.0f, 1.5f),
+		glm::vec3(1.5f, 0.0f, -1.5f),
+		glm::vec3(-1.5f, 0.0f, -1.5f)
 	};
 
 	glm::vec3 lightColors[4] = {
@@ -88,27 +97,34 @@ int main()
 		// input
 		processInput(window);
 
-		glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		PBRShader.use();
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		PBRShader.setMat4("view", camera.getViewMatrix());
-		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), 0.0f, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+		float time = glfwGetTime();
+		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
 		// material uniforms
-		PBRShader.setVec3("material.albedo", glm::vec3(1.0f, 0.0f, 0.0f));
-		PBRShader.setFloat("material.metallic", 1.0f);
-		PBRShader.setFloat("material.roughness", 0.2f);
-		PBRShader.setFloat("material.ao", 0.0f);
+		// PBRShader.setVec3("material.albedo", glm::vec3(1.0f, 0.0f, 0.0f));
+		// PBRShader.setFloat("material.metallic", 1.0f);
+		// PBRShader.setFloat("material.roughness", 0.2f);
+		// PBRShader.setFloat("material.ao", 0.0f);
+		PBRShader.setInt("material.albedoMap", 0);
+		PBRShader.setInt("material.normalMap", 1);
+		PBRShader.setInt("material.metallicMap", 2);
+		PBRShader.setInt("material.roughnessMap", 3);
+		PBRShader.setInt("material.aoMap", 4);
+		bindTextures(sphereTex);
 
 		// light uniforms
 		for (int i = 0; i < 4; ++i) {
 			PBRShader.setVec3("lights[" + std::to_string(i) + "].position", lightPositions[i]);
 			PBRShader.setVec3("lights[" + std::to_string(i) + "].color", lightColors[i]);
 		}
-
 		glBindVertexArray(sphere);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 

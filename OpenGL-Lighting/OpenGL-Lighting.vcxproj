@@ -196,6 +196,11 @@
     <Image Include="resources\textures\container2_specular_colored.png" />
     <Image Include="resources\textures\face.png" />
     <Image Include="resources\textures\Installment I.jpg" />
+    <Image Include="resources\textures\pbr\rusted_iron\albedo.png" />
+    <Image Include="resources\textures\pbr\rusted_iron\ao.png" />
+    <Image Include="resources\textures\pbr\rusted_iron\metallic.png" />
+    <Image Include="resources\textures\pbr\rusted_iron\normal.png" />
+    <Image Include="resources\textures\pbr\rusted_iron\roughness.png" />
     <Image Include="resources\textures\pixelart.PNG" />
     <Image Include="resources\textures\wood.png" />
   </ItemGroup>
@@ -225,6 +230,7 @@
     <None Include="shaders\pbr\pbr_base.vert" />
     <None Include="shaders\pbr\pbr_points.frag" />
     <None Include="shaders\pbr\pbr_test.frag" />
+    <None Include="shaders\pbr\pbr_textures.frag" />
     <None Include="shaders\post_process\bloom.frag" />
     <None Include="shaders\post_process\framebuffer_quad.vert" />
     <None Include="shaders\linear_depth.frag" />
