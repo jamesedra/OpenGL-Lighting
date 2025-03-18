@@ -275,6 +275,7 @@ unsigned int createSphereVAO(unsigned int& indicesCount, float radius, unsigned 
 
 	const float PI = 3.1415926f;
 
+	// vertices (pos, normals, uvs)
 	for (unsigned int i = 0; i <= stackCount; i++) {
 		float stackAngle = PI / 2.0f - i * (PI / (float)stackCount);
 		float xy = radius * cosf(stackAngle);
@@ -283,24 +284,29 @@ unsigned int createSphereVAO(unsigned int& indicesCount, float radius, unsigned 
 		for (unsigned int j = 0; j <= sectorCount; j++) {
 			float sectorAngle = j * (2 * PI / (float)sectorCount);
 
+			// positions
 			float x = xy * cosf(sectorAngle);
 			float y = xy * sinf(sectorAngle);
 			vertices.push_back(x);
 			vertices.push_back(y);
 			vertices.push_back(z);
 
+			// normals
 			float lengthInv = 1.0 / radius;
 			vertices.push_back(x * lengthInv);
 			vertices.push_back(y * lengthInv);
 			vertices.push_back(z * lengthInv);
 
+			// uvs
 			float s = (float)j / (float)sectorCount;
 			float t = (float)i / (float)stackCount;
 			vertices.push_back(s);
 			vertices.push_back(t);
+
 		}
 	}
 
+	// indices
 	for (unsigned int i = 0; i < stackCount; i++) {
 		for (unsigned int j = 0; j < sectorCount; j++) {
 			unsigned int first = i * (sectorCount + 1) + j;
@@ -317,6 +323,44 @@ unsigned int createSphereVAO(unsigned int& indicesCount, float radius, unsigned 
 				indices.push_back(second + 1);
 			}
 		}
+	}
+
+	size_t vertexCount = vertices.size() / 8;
+
+	std::vector<glm::vec3> tangents(vertexCount, glm::vec3(0.0f));
+	std::vector<glm::vec3> bitangents(vertexCount, glm::vec3(0.0f));
+
+	for (unsigned int i = 0; i < indices.size(); i+=3) {
+		unsigned int i0 = indices[i];
+		unsigned int i1 = indices[i + 1];
+		unsigned int i2 = indices[i + 2];
+
+		glm::vec3 pos[3];
+		glm::vec2 uv[3];
+
+		for (unsigned int j = 0; j < 3; j++) {
+			unsigned int index = indices[i + j];
+			pos[j] = glm::vec3(vertices[index * 8 + 0], vertices[index * 8 + 1], vertices[index * 8 + 2]);
+			uv[j] = glm::vec2(vertices[index * 8 + 6], vertices[index * 8 + 7]);
+		}
+
+		glm::mat2x3 TB = getTangentBitangentMatrix(pos, uv);
+		glm::vec3 tangent = TB[0];
+		glm::vec3 bitangent = TB[1];
+
+		tangents[i0] += tangent;
+		tangents[i1] += tangent;
+		tangents[i2] += tangent;
+
+		bitangents[i0] += bitangent;
+		bitangents[i1] += bitangent;
+		bitangents[i2] += bitangent;
+
+	}
+
+	for (unsigned int i = 0; i < vertexCount; ++i) {
+		tangents[i] = glm::normalize(tangents[i]);
+		bitangents[i] = glm::normalize(bitangents[i]);
 	}
 
 	unsigned int VAO, VBO, EBO;
@@ -339,6 +383,22 @@ unsigned int createSphereVAO(unsigned int& indicesCount, float radius, unsigned 
 
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
+
+	unsigned int tanVBO;
+	glGenBuffers(1, &tanVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, tanVBO);
+	glBufferData(GL_ARRAY_BUFFER, tangents.size() * sizeof(glm::vec3), tangents.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glEnableVertexAttribArray(3);
+
+	unsigned int bitanVBO;
+	glGenBuffers(1, &bitanVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, bitanVBO);
+	glBufferData(GL_ARRAY_BUFFER, bitangents.size() * sizeof(glm::vec3), bitangents.data(), GL_STATIC_DRAW);
+
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+	glEnableVertexAttribArray(4);
 
 	glBindVertexArray(0);
 
