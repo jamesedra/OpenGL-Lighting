@@ -75,7 +75,7 @@ int main()
 
 	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao };
 
-	Shader PBRShader("shaders/pbr/pbr_base.vert", "shaders/pbr/pbr_textures.frag");
+	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_textures_wnormals.frag");
 
 	glm::vec3 lightPositions[4] = {
 		glm::vec3(1.5f, 0.0f, 1.5f),

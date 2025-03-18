@@ -14,6 +14,7 @@ out VS_OUT {
 	vec3 TangentViewPos;
 	vec3 TangentFragPos;
 	mat3 TBN;
+	mat3 nonTransTBN;
 } vs_out;
 
 uniform mat4 projection;
@@ -42,6 +43,7 @@ void main()
 	vs_out.TangentViewPos = TBN * viewPos;
 	vs_out.TangentFragPos = TBN * vec3(model * vec4(aPos, 0.0));
 	vs_out.TBN = TBN;
+	vs_out.nonTransTBN = mat3(T, B, N);
 
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

@@ -231,6 +231,7 @@
     <None Include="shaders\pbr\pbr_points.frag" />
     <None Include="shaders\pbr\pbr_test.frag" />
     <None Include="shaders\pbr\pbr_textures.frag" />
+    <None Include="shaders\pbr\pbr_textures_wnormals.frag" />
     <None Include="shaders\post_process\bloom.frag" />
     <None Include="shaders\post_process\framebuffer_quad.vert" />
     <None Include="shaders\linear_depth.frag" />
