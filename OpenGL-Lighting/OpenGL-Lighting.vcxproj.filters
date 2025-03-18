@@ -253,6 +253,7 @@
     <None Include="shaders\pbr\pbr_points.frag" />
     <None Include="shaders\pbr\pbr_base.vert" />
     <None Include="shaders\pbr\pbr_textures.frag" />
+    <None Include="shaders\pbr\pbr_textures_wnormals.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
