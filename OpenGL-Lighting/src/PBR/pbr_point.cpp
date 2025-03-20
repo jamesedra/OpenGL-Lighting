@@ -66,6 +66,8 @@ int main()
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
 
+	unsigned int cube = createCubeVAO();
+
 	// Textures
 	unsigned int tex_albedo = loadTexture("resources/textures/pbr/rusted_iron/albedo.png", true, TextureColorSpace::sRGB);
 	unsigned int tex_normal = loadTexture("resources/textures/pbr/rusted_iron/normal.png", true, TextureColorSpace::Linear);
@@ -73,9 +75,12 @@ int main()
 	unsigned int tex_roughness = loadTexture("resources/textures/pbr/rusted_iron/roughness.png", true, TextureColorSpace::Linear);
 	unsigned int tex_ao = loadTexture("resources/textures/pbr/rusted_iron/ao.png", true, TextureColorSpace::Linear);
 
+	unsigned int hdr = loadHDR("resources/textures/hdr/newport_loft.hdr", true);
+
 	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao };
 
 	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_textures_wnormals.frag");
+	Shader HDRTextureTest("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/eqr_to_cubemap.frag");
 
 	glm::vec3 lightPositions[4] = {
 		glm::vec3(1.5f, 0.0f, 1.5f),
@@ -99,13 +104,13 @@ int main()
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
 		PBRShader.use();
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		PBRShader.setMat4("view", camera.getViewMatrix());
 
 		float time = glfwGetTime();
-		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(1.5f, 0.0f, 1.5f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
 		// material uniforms
@@ -127,6 +132,17 @@ int main()
 		}
 		glBindVertexArray(sphere);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+		
+
+		HDRTextureTest.use();
+		HDRTextureTest.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		HDRTextureTest.setMat4("view", camera.getViewMatrix());
+		HDRTextureTest.setInt("equirectangularMap", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, hdr);
+		glBindVertexArray(cube);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
 		// checks events and swap buffers
 		glfwPollEvents();
