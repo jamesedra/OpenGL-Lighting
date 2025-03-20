@@ -26,6 +26,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 unsigned int loadCubemap(std::vector<std::string> faces);
 unsigned int createDefaultTexture();
 unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpace space = TextureColorSpace::Linear);
+unsigned int loadHDR(const char* path, bool flipVertically);
 
 // vertex array object references
 unsigned int createCubeVAO();

@@ -209,6 +209,7 @@
     <None Include="resources\objects\cyborg\cyborg.blend" />
     <None Include="resources\objects\cyborg\cyborg.blend1" />
     <None Include="resources\objects\cyborg\cyborg.mtl" />
+    <None Include="resources\textures\hdr\newport_loft.hdr" />
     <None Include="shaders\base_lit.frag" />
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\base_vertex.vert" />

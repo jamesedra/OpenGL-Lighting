@@ -151,7 +151,7 @@ unsigned int createDefaultTexture()
 
 unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpace space)
 {
-	stbi_set_flip_vertically_on_load(true);
+	stbi_set_flip_vertically_on_load(flipVertically);
 
 	int width, height, nrChannels;
 	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
@@ -185,6 +185,26 @@ unsigned int loadTexture(const char* path, bool flipVertically, TextureColorSpac
 	stbi_image_free(data);
 
 	return tex.id;
+}
+
+unsigned int loadHDR(const char* path, bool flipVertically)
+{
+	stbi_set_flip_vertically_on_load(flipVertically);
+
+	int width, height, nrChannels;
+	float* data = stbi_loadf(path, &width, &height, &nrChannels, 0);
+	if (!data)
+	{
+		std::cout << "Failed to load HDR image" << std::endl;
+		stbi_image_free(data);
+		return 0;
+	}
+
+	Texture hdrTexture(width, height, GL_RGB16F, GL_RGB, GL_LINEAR, GL_CLAMP_TO_EDGE, data);
+
+	stbi_image_free(data);
+
+	return hdrTexture.id;
 }
 
 unsigned int createCubeVAO()
