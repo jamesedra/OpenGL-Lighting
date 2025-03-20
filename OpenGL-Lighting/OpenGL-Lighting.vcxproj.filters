@@ -254,6 +254,8 @@
     <None Include="shaders\pbr\pbr_base.vert" />
     <None Include="shaders\pbr\pbr_textures.frag" />
     <None Include="shaders\pbr\pbr_textures_wnormals.frag" />
+    <None Include="shaders\cubemapping\eqr_to_cubemap.vert" />
+    <None Include="shaders\cubemapping\eqr_to_cubemap.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
