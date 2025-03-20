@@ -213,6 +213,8 @@
     <None Include="shaders\base_lit.vert" />
     <None Include="shaders\base_vertex.vert" />
     <None Include="shaders\blinn_phong.frag" />
+    <None Include="shaders\cubemapping\eqr_to_cubemap.frag" />
+    <None Include="shaders\cubemapping\eqr_to_cubemap.vert" />
     <None Include="shaders\deferred\def_basecolor.frag" />
     <None Include="shaders\deferred\def_gbf.frag" />
     <None Include="shaders\deferred\def_gbf_ssao.frag" />
