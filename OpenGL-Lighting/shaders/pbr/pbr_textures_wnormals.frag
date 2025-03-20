@@ -54,15 +54,15 @@ void main() {
 	n = normalize(n * 2.0 - 1.0);
 	n = normalize(fs_in.nonTransTBN * n);
 
-	vec3 v = normalize(viewPos -  fs_in.FragPos);					// view dir
+	vec3 v = normalize(viewPos -  fs_in.FragPos);	// view dir
 
 	roughness = max(roughness, 0.0001);
 
-	vec3 Lo = vec3(0.0);									// Irradiance
+	vec3 Lo = vec3(0.0);	// Irradiance
 
 	for (int i = 0; i < 4; i++) {
 		vec3 l = normalize(lights[i].position -  fs_in.FragPos);	// light dir
-		vec3 h = normalize(v + l);							// halfway vector
+		vec3 h = normalize(v + l);	// halfway vector
 
 		float distance = length(lights[i].position - fs_in.FragPos);
 		float attenuation = 1.0 / (distance * distance);
