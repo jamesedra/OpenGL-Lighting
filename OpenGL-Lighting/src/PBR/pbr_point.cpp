@@ -46,9 +46,9 @@ int main()
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glEnable(GL_DEPTH_TEST);
-	glFrontFace(GL_CCW);
-	glCullFace(GL_BACK);
-	glEnable(GL_CULL_FACE);
+	//glFrontFace(GL_CCW);
+	//glCullFace(GL_BACK);
+	// glEnable(GL_CULL_FACE);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -62,66 +62,14 @@ int main()
 	);
 	glfwSetWindowUserPointer(window, &camera);
 
-	// Framebuffers
-	// for hdr
-	Framebuffer hdrCapture(W_WIDTH, W_HEIGHT);
-	hdrCapture.attachRenderbuffer(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
-
-	unsigned int envCubemap;
-	glGenTextures(1, &envCubemap);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-	for (unsigned int i = 0; i < 6; ++i)
-	{
-		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F,
-			512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
-	}
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-	hdrCapture.attachTexture(GL_DEPTH_ATTACHMENT, envCubemap);
-	hdrCapture.bind();
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-	hdrCapture.unbind();
-	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-
-	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-
-	glm::mat4 captureViews[] =
-	{
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(1.0f, 0.0f, 0.0f), 
-			glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(-1.0f, 0.0f, 0.0f),
-			glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(0.0f, 1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, 1.0f)),
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(0.0f, -1.0f, 0.0f),
-			glm::vec3(0.0f, 0.0f, -1.0f)),
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(0.0f, 0.0f, 1.0f),
-			glm::vec3(0.0f, -1.0f, 0.0f)),
-		glm::lookAt(
-			glm::vec3(0.0f, 0.0f, 0.0f), 
-			glm::vec3(0.0f, 0.0f, -1.0f),
-			glm::vec3(0.0f, -1.0f, 0.0f))
-	};
+	// Shaders
+	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_textures_wnormals.frag");
+	Shader EQRToCubemap("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/eqr_to_cubemap.frag");
+	Shader Skybox("shaders/cubemapping/skybox.vert", "shaders/cubemapping/skybox.frag");
 
 	// Objects
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
-
 	unsigned int cube = createCubeVAO();
 
 	// Textures
@@ -131,13 +79,64 @@ int main()
 	unsigned int tex_roughness = loadTexture("resources/textures/pbr/rusted_iron/roughness.png", true, TextureColorSpace::Linear);
 	unsigned int tex_ao = loadTexture("resources/textures/pbr/rusted_iron/ao.png", true, TextureColorSpace::Linear);
 
-	unsigned int hdr = loadHDR("resources/textures/hdr/newport_loft.hdr", true);
-
 	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao };
 
-	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_textures_wnormals.frag");
-	Shader HDRTextureTest("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/eqr_to_cubemap.frag");
+	// HDR
+	Framebuffer hdrCapture(512, 512);
+	hdrCapture.attachRenderbuffer(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
 
+	unsigned int hdr = loadHDR("resources/textures/hdr/newport_loft.hdr", true);
+
+	unsigned int envCubemap;
+	glGenTextures(1, &envCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 512, 512, 0, GL_RGB, GL_FLOAT, nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	glm::mat4 captureProjection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	glm::mat4 captureViews[] =
+	{
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f,  0.0f,  0.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f,  0.0f,  1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f,  0.0f), glm::vec3(0.0f,  0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, -1.0f,  0.0f)),
+		glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
+	};
+
+	EQRToCubemap.use();
+	EQRToCubemap.setInt("equirectangularMap", 0);
+	EQRToCubemap.setMat4("projection", captureProjection);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hdr);
+
+	hdrCapture.bind();
+	for (unsigned int i = 0; i < 6; i++) {
+		EQRToCubemap.setMat4("view", captureViews[i]);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		glBindVertexArray(cube);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+		glBindVertexArray(0);
+	}
+	hdrCapture.unbind();
+
+	Skybox.use();
+	Skybox.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+	Skybox.setInt("environmentMap", 0);
+
+
+	// Lighting
 	glm::vec3 lightPositions[4] = {
 		glm::vec3(1.5f, 0.0f, 1.5f),
 		glm::vec3(-1.5f, 0.0f, 1.5f),
@@ -152,24 +151,26 @@ int main()
 		glm::vec3(5.0f, 10.0f, 5.0f)
 	};
 
+	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	// render loop
 	while (!glfwWindowShouldClose(window))
 	{
 		// input
 		processInput(window);
-
+		
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+
+		// PBR Sphere
 		PBRShader.use();
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		PBRShader.setMat4("view", camera.getViewMatrix());
 
 		float time = glfwGetTime();
-		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(1.5f, 0.0f, 1.5f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
-		// material uniforms
+		// material uniforms, flip commented out code if not using textures
 		// PBRShader.setVec3("material.albedo", glm::vec3(1.0f, 0.0f, 0.0f));
 		// PBRShader.setFloat("material.metallic", 1.0f);
 		// PBRShader.setFloat("material.roughness", 0.2f);
@@ -188,17 +189,21 @@ int main()
 		}
 		glBindVertexArray(sphere);
 		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
-		
 
-		HDRTextureTest.use();
-		HDRTextureTest.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
-		HDRTextureTest.setMat4("view", camera.getViewMatrix());
-		HDRTextureTest.setInt("equirectangularMap", 0);
+		// Skybox
+		glFrontFace(GL_CW);
+		glDepthFunc(GL_LEQUAL);
+		Skybox.use();
+		glm::mat4 view = glm::mat4(1.0f);
+		glm::vec3 cameraPos = camera.getCameraPos();
+		view = glm::lookAt(cameraPos, cameraPos + camera.getCameraFront(), camera.getCameraUp());
+		Skybox.setMat4("view", glm::mat4(glm::mat3(view)));
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, hdr);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 		glBindVertexArray(cube);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		glDepthFunc(GL_LESS);
+		glFrontFace(GL_CCW);
 
 		// checks events and swap buffers
 		glfwPollEvents();

@@ -257,6 +257,8 @@
     <None Include="shaders\cubemapping\eqr_to_cubemap.frag" />
     <None Include="shaders\cubemapping\eqr_to_cubemap.vert" />
     <None Include="resources\textures\hdr\newport_loft.hdr" />
+    <None Include="shaders\cubemapping\skybox.vert" />
+    <None Include="shaders\cubemapping\skybox.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
