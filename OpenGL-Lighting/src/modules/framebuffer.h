@@ -52,6 +52,16 @@ public:
 		unbind();
 	}
 
+	void editRenderbufferStorage(int width, int height, GLenum internalFormat) {
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+		this->width = width;
+		this->height = height;
+		glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+		glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, width, height);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		unbind();
+	}
+
 	bool isComplete() {
 		bind();
 		bool complete = (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);

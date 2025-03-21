@@ -216,6 +216,7 @@
     <None Include="shaders\blinn_phong.frag" />
     <None Include="shaders\cubemapping\eqr_to_cubemap.frag" />
     <None Include="shaders\cubemapping\eqr_to_cubemap.vert" />
+    <None Include="shaders\cubemapping\irradiance_convolution.frag" />
     <None Include="shaders\cubemapping\skybox.frag" />
     <None Include="shaders\cubemapping\skybox.vert" />
     <None Include="shaders\deferred\def_basecolor.frag" />

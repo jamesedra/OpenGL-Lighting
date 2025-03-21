@@ -259,6 +259,7 @@
     <None Include="resources\textures\hdr\newport_loft.hdr" />
     <None Include="shaders\cubemapping\skybox.vert" />
     <None Include="shaders\cubemapping\skybox.frag" />
+    <None Include="shaders\cubemapping\irradiance_convolution.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
