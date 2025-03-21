@@ -137,6 +137,7 @@ int deferred_main()
 		// input
 		processInput(window);
 
+		/*
 		// light movement test
 		float time = glfwGetTime() * 0.5f;
 		radius = 5.0f + sin(time) * (10.0f - 5.0f);
@@ -147,7 +148,7 @@ int deferred_main()
 			lights[i].Radius = radius;
 		}
 		uboLights.setData(&lights, sizeof(lights));
-
+		*/
 		// Geometry pass
 		gBuffer.bind();
 		glClearColor(0.0, 0.0, 0.0, 1.0);
@@ -242,6 +243,7 @@ int deferred_main()
 			glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
 		}
 		glDisable(GL_BLEND);
+
 		// checks events and swap buffers
 		glfwPollEvents();
 		glfwSwapBuffers(window);
