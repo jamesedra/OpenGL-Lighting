@@ -15,6 +15,7 @@ in VS_OUT {
 } fs_in;
 
 uniform vec3 viewPos;
+uniform samplerCube irradianceMap;
 
 struct Material {
 	sampler2D albedoMap;
@@ -36,8 +37,8 @@ struct Light {
 };
 uniform Light lights[4];
 
-
 vec3 Fresnel(float cosTheta, vec3 F0);
+vec3 FresnelRoughness(float cosTheta, vec3 F0, float roughness);
 float NormalDistribution(float nDotH, float roughness);
 float GeometryEq(float dotProd, float roughness);
 
@@ -54,15 +55,18 @@ void main() {
 	n = normalize(n * 2.0 - 1.0);
 	n = normalize(fs_in.nonTransTBN * n);
 
-	vec3 v = normalize(viewPos -  fs_in.FragPos);					// view dir
+	vec3 F0 = vec3(0.04);
+	F0 = mix(F0, albedo, metallic);
+
+	vec3 v = normalize(viewPos -  fs_in.FragPos);	// view dir
 
 	roughness = max(roughness, 0.0001);
 
-	vec3 Lo = vec3(0.0);									// Irradiance
+	vec3 Lo = vec3(0.0);	// Irradiance
 
 	for (int i = 0; i < 4; i++) {
 		vec3 l = normalize(lights[i].position -  fs_in.FragPos);	// light dir
-		vec3 h = normalize(v + l);							// halfway vector
+		vec3 h = normalize(v + l);	// halfway vector
 
 		float distance = length(lights[i].position - fs_in.FragPos);
 		float attenuation = 1.0 / (distance * distance);
@@ -75,9 +79,6 @@ void main() {
 		float nDotV = max(dot(n, v), 0.0);
 
 		// Specular BRDF
-		vec3 F0 = vec3(0.04);
-		F0 = mix(F0, albedo, metallic);
-		
 		vec3 F = Fresnel(vDotH, F0);
 		float D = NormalDistribution(nDotH, roughness);
 		float G = GeometryEq(nDotL, roughness) * GeometryEq(nDotV, roughness);
@@ -98,7 +99,12 @@ void main() {
 		Lo += (DiffuseBRDF + SpecBRDF) * radiance * nDotL;
 	}
 
-	vec3 ambient = vec3(0.03) * albedo * ao;
+	
+	// ambient value based on irradiance map
+	vec3 kS = FresnelRoughness(max(dot(n, v), 0.0), F0, roughness);
+	vec3 kD = 1.0 - kS;
+	vec3 ambient = kD * texture(irradianceMap, n).rgb * albedo * ao;
+	//vec3 ambient = vec3(0.03) * albedo * ao; // base ambient value
 	vec3 color = ambient + Lo;
 
 	// HDR and gamma corrections
@@ -111,6 +117,11 @@ void main() {
 // uses Fresnel-Schlick approximation
 vec3 Fresnel(float cosTheta, vec3 F0) {
 	return F0 + (1.0 - F0) * pow(max((1.0 - cosTheta), 0.0), 5.0);
+}
+
+// based on Sebastien Lagarde's implementation
+vec3 FresnelRoughness(float cosTheta, vec3 F0, float roughness) {
+	return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 // uses TrowBridge-Reitz GGX

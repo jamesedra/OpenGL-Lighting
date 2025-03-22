@@ -80,8 +80,6 @@ int main()
 	unsigned int tex_roughness = loadTexture("resources/textures/pbr/rusted_iron/roughness.png", true, TextureColorSpace::Linear);
 	unsigned int tex_ao = loadTexture("resources/textures/pbr/rusted_iron/ao.png", true, TextureColorSpace::Linear);
 
-	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao };
-
 	// HDR
 	Framebuffer hdrCapture(512, 512);
 	hdrCapture.attachRenderbuffer(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
@@ -169,10 +167,10 @@ int main()
 	}
 	hdrCapture.unbind();
 
+	// Static uniforms for skyboxes
 	Skybox.use();
 	Skybox.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 	Skybox.setInt("environmentMap", 0);
-
 
 	// Lighting
 	glm::vec3 lightPositions[4] = {
@@ -188,6 +186,8 @@ int main()
 		glm::vec3(5.0f, 5.0f, 10.0f),
 		glm::vec3(5.0f, 10.0f, 5.0f)
 	};
+
+	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao,  };
 
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	// render loop
@@ -219,6 +219,9 @@ int main()
 		PBRShader.setInt("material.roughnessMap", 3);
 		PBRShader.setInt("material.aoMap", 4);
 		bindTextures(sphereTex);
+		PBRShader.setInt("irradianceMap", 5);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceCubemap);
 
 		// light uniforms
 		for (int i = 0; i < 4; ++i) {
