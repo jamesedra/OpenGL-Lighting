@@ -20,7 +20,7 @@
 constexpr int W_WIDTH = 1600;
 constexpr int W_HEIGHT = 1200;
 
-int pbr_main()
+int main()
 {
 	// initialization phase
 	glfwInit();
@@ -28,7 +28,7 @@ int pbr_main()
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "PBR", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(W_WIDTH, W_HEIGHT, "PBR IBL", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -119,7 +119,8 @@ int pbr_main()
 	glBindTexture(GL_TEXTURE_2D, hdr);
 
 	hdrCapture.bind();
-	for (unsigned int i = 0; i < 6; i++) {
+	for (unsigned int i = 0; i < 6; i++)
+	{
 		EQRToCubemap.setMat4("view", captureViews[i]);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, envCubemap, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -156,7 +157,8 @@ int pbr_main()
 	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
 
 	hdrCapture.bind();
-	for (unsigned int i = 0; i < 6; i++) {
+	for (unsigned int i = 0; i < 6; i++)
+	{
 		IrradianceShader.setMat4("view", captureViews[i]);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceCubemap, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -166,6 +168,23 @@ int pbr_main()
 		glBindVertexArray(0);
 	}
 	hdrCapture.unbind();
+
+	// HDR pre-filtered map
+	unsigned int prefilterMap;
+	glGenTextures(1, &prefilterMap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+	for (unsigned int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB16F, 128, 128, 0, GL_RGB, GL_FLOAT, nullptr);
+	}
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); // enable trilinear filtering
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
 	// Static uniforms for skyboxes
 	Skybox.use();
@@ -187,7 +206,7 @@ int pbr_main()
 		glm::vec3(5.0f, 10.0f, 5.0f)
 	};
 
-	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao,  };
+	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao, };
 
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	// render loop
@@ -195,7 +214,7 @@ int pbr_main()
 	{
 		// input
 		processInput(window);
-		
+
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -224,7 +243,8 @@ int pbr_main()
 		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceCubemap);
 
 		// light uniforms
-		for (int i = 0; i < 4; ++i) {
+		for (int i = 0; i < 4; ++i)
+		{
 			PBRShader.setVec3("lights[" + std::to_string(i) + "].position", lightPositions[i]);
 			PBRShader.setVec3("lights[" + std::to_string(i) + "].color", lightColors[i]);
 		}

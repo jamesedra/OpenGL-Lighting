@@ -141,6 +141,7 @@
     <ClCompile Include="src\modules\shader.cpp" />
     <ClCompile Include="src\normal_mapping\normal_mapping.cpp" />
     <ClCompile Include="src\parallax\parallax.cpp" />
+    <ClCompile Include="src\PBR\ibl.cpp" />
     <ClCompile Include="src\PBR\pbr_point.cpp" />
     <ClCompile Include="src\PBR\pbr_test.cpp" />
     <ClCompile Include="src\shadow_mapping\directional_shadow.cpp" />
