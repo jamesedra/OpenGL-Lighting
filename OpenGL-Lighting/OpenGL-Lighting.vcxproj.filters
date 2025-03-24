@@ -263,6 +263,7 @@
     <None Include="shaders\cubemapping\skybox.vert" />
     <None Include="shaders\cubemapping\skybox.frag" />
     <None Include="shaders\cubemapping\irradiance_convolution.frag" />
+    <None Include="shaders\cubemapping\prefilter_cubemap.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />
