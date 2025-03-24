@@ -67,6 +67,7 @@ int main()
 	Shader EQRToCubemap("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/eqr_to_cubemap.frag");
 	Shader Skybox("shaders/cubemapping/skybox.vert", "shaders/cubemapping/skybox.frag");
 	Shader IrradianceShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/irradiance_convolution.frag");
+	Shader PrefilterShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/prefilter_cubemap.frag");
 
 	// Objects
 	unsigned int indicesCount;
@@ -185,6 +186,37 @@ int main()
 	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+
+	// capture prefilter mip levels
+	PrefilterShader.use();
+	PrefilterShader.setInt("environmentMap", 0);
+	PrefilterShader.setMat4("projection", captureProjection);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+
+	hdrCapture.bind();
+	unsigned int maxMipLevels = 5;
+	for (unsigned int mip = 0; mip < maxMipLevels; mip++) {
+		unsigned int mipWidth = 128 * std::pow(0.5, mip);
+		unsigned int mipHeight = 128 * std::pow(0.5, mip);
+		hdrCapture.editRenderbufferStorage(mipWidth, mipHeight, GL_DEPTH_COMPONENT24);
+		glViewport(0, 0, mipWidth, mipHeight);
+
+		float roughness = (float)mip / (float)(maxMipLevels - 1);
+		PrefilterShader.setFloat("roughness", roughness);
+		for (unsigned int i = 0; i < 6; i++)
+		{
+			PrefilterShader.setMat4("view", captureViews[i]);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, prefilterMap, mip);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			glBindVertexArray(cube);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
+			glBindVertexArray(0);
+		}
+	}
+	hdrCapture.unbind();
 
 	// Static uniforms for skyboxes
 	Skybox.use();
