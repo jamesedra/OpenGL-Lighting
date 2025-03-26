@@ -110,6 +110,11 @@ public:
 		return texture; 
 	}
 
+	unsigned int getRBO() const
+	{
+		return rbo;
+	}
+
 	~Framebuffer()
 	{
 		glDeleteFramebuffers(1, &FBO);

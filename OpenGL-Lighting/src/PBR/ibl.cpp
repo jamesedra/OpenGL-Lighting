@@ -49,6 +49,7 @@ int main()
 	//glFrontFace(GL_CCW);
 	//glCullFace(GL_BACK);
 	// glEnable(GL_CULL_FACE);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
@@ -187,7 +188,7 @@ int main()
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
-
+	
 	// capture prefilter mip levels
 	PrefilterShader.use();
 	PrefilterShader.setInt("environmentMap", 0);
@@ -200,7 +201,9 @@ int main()
 	for (unsigned int mip = 0; mip < maxMipLevels; mip++) {
 		unsigned int mipWidth = 128 * std::pow(0.5, mip);
 		unsigned int mipHeight = 128 * std::pow(0.5, mip);
-		hdrCapture.editRenderbufferStorage(mipWidth, mipHeight, GL_DEPTH_COMPONENT24);
+		glBindRenderbuffer(GL_RENDERBUFFER, hdrCapture.getRBO());
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24,
+			mipWidth, mipHeight);
 		glViewport(0, 0, mipWidth, mipHeight);
 
 		float roughness = (float)mip / (float)(maxMipLevels - 1);
@@ -292,7 +295,8 @@ int main()
 		view = glm::lookAt(cameraPos, cameraPos + camera.getCameraFront(), camera.getCameraUp());
 		Skybox.setMat4("view", glm::mat4(glm::mat3(view)));
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		//glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 		//glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceCubemap);
 		glBindVertexArray(cube);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
