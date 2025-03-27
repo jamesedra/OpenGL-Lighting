@@ -235,7 +235,10 @@
     <None Include="shaders\emissive_color.frag" />
     <None Include="shaders\empty.frag" />
     <None Include="shaders\base_lit_mrt.frag" />
+    <None Include="shaders\pbr\brdf.frag" />
+    <None Include="shaders\pbr\brdf.vert" />
     <None Include="shaders\pbr\pbr_base.vert" />
+    <None Include="shaders\pbr\pbr_ibl.frag" />
     <None Include="shaders\pbr\pbr_points.frag" />
     <None Include="shaders\pbr\pbr_test.frag" />
     <None Include="shaders\pbr\pbr_textures.frag" />

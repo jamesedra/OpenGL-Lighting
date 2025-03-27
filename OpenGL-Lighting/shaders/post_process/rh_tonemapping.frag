@@ -14,5 +14,8 @@ void main() {
 	vec3 mapped = hdrColor / (hdrColor + vec3(1.0));
 	mapped = vec3(1.0) - exp(-hdrColor * exposure);
 	mapped = pow(mapped, vec3(1.0 / gamma));
-	FragColor = vec4(mapped, 1.0);
+	//FragColor = vec4(mapped, 1.0);
+
+	vec2 testOut = texture(hdrBuffer, TexCoords).rg;
+	FragColor = vec4(testOut, 0.0, 1.0);
 }

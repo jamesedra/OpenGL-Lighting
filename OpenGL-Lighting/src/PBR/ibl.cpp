@@ -69,11 +69,13 @@ int main()
 	Shader Skybox("shaders/cubemapping/skybox.vert", "shaders/cubemapping/skybox.frag");
 	Shader IrradianceShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/irradiance_convolution.frag");
 	Shader PrefilterShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/prefilter_cubemap.frag");
-
+	Shader IntegratedBRDF("shaders/pbr/brdf.vert", "shaders/pbr/brdf.frag");
+	Shader outputFrame("shaders/post_process/framebuffer_quad.vert", "shaders/post_process/rh_tonemapping.frag");
 	// Objects
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
 	unsigned int cube = createCubeVAO();
+	unsigned int frame = createFrameVAO();
 
 	// Textures
 	unsigned int tex_albedo = loadTexture("resources/textures/pbr/rusted_iron/albedo.png", true, TextureColorSpace::sRGB);
@@ -192,7 +194,6 @@ int main()
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 
-	
 	// capture prefilter mip levels
 	PrefilterShader.use();
 	PrefilterShader.setInt("environmentMap", 0);
@@ -223,6 +224,29 @@ int main()
 			glBindVertexArray(0);
 		}
 	}
+	hdrCapture.unbind();
+
+	// Precomputed BRDF
+	unsigned int brdfLUTTexture;
+	glGenTextures(1, &brdfLUTTexture);
+
+	glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG16F, 512, 512, 0, GL_RG, GL_FLOAT, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	//hdrCapture.bind();
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrCapture.FBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, hdrCapture.getRBO());
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, 512, 512);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, brdfLUTTexture, 0);
+	glViewport(0, 0, 512, 512);
+	IntegratedBRDF.use();
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBindVertexArray(frame);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 	hdrCapture.unbind();
 
 	// Static uniforms for skyboxes
@@ -256,7 +280,18 @@ int main()
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, W_WIDTH, W_HEIGHT);
+		outputFrame.use();
+		outputFrame.setInt("hdrBuffer", 0);
+		outputFrame.setFloat("exposure", 1.0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+		glBindVertexArray(frame);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+
+
+		/*
 		// PBR Sphere
 		PBRShader.use();
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
@@ -306,6 +341,7 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
 		glFrontFace(GL_CCW);
+		*/
 
 		// checks events and swap buffers
 		glfwPollEvents();

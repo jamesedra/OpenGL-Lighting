@@ -9,7 +9,7 @@ vec2 IntegrateBRDF(float NdotV, float roughness);
 float RadicalInverse_VdC(uint bits);
 vec2 Hammersley(uint i, uint N);
 vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness);
-float GeometrySmith(float N, float V, float, roughness);
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 
 void main(){
 	vec2 integratedBRDF = IntegrateBRDF(TexCoords.x, TexCoords.y);
@@ -35,18 +35,21 @@ vec2 IntegrateBRDF(float NdotV, float roughness) {
 		vec3 H = ImportanceSampleGGX(Xi, N, roughness);
 		vec3 L = normalize(2.0 * dot(V, H) * H - V);
 
-		float NdotL = max(dot(L.z, 0.0), 0.0);
-		float NdotH = max(dot(H.z, 0.0), 0.0);
+		// float NdotL = max(dot(L.z, 0.0), 0.0);
+		// float NdotH = max(dot(H.z, 0.0), 0.0);
+		float NdotL = max(L.z, 0.0);
+		float NdotH = max(H.z, 0.0);
 		float VdotH = max(dot(H, V), 0.0);
 
-		if (NdotL > 0.0) {
-			float G = GeometrySmith(N, V, L, roughness);
-			float G_Vis = (G * VdotH) / (NdotH * NdotV);
-			float Fc = pow(1.0 - VdotH, 5.0);
+		if(NdotL > 0.0)
+        {
+            float G = GeometrySmith(N, V, L, roughness);
+            float G_Vis = (G * VdotH) / (NdotH * NdotV);
+            float Fc = pow(1.0 - VdotH, 5.0);
 
-			A += (1.0 - Fc) * G_Vis;
-			B += Fc * G_Vis;
-		}
+            A += (1.0 - Fc) * G_Vis;
+            B += Fc * G_Vis;
+        }
 	}
 	A /= float(SAMPLE_COUNT);
 	B /= float(SAMPLE_COUNT);
@@ -90,7 +93,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float roughness) {
 }
 
 // uses Schlick-Beckman GGX
-float GeometryEq(float dotProd, float roughness) {
+float GeometryEq(float NdotV, float roughness) {
 	float a = roughness;
 	float k = (a * a) / 2.0;
 	float nom = NdotV;
@@ -98,7 +101,7 @@ float GeometryEq(float dotProd, float roughness) {
 	return nom / denom;
 }
 
-vec3 GeometrySmith(float N, float V, float, roughness) {
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 	float NdotV = max(dot(N, V), 0.0);
 	float NdotL = max(dot(N, L), 0.0);
 	float ggx2 = GeometryEq(NdotV, roughness);
