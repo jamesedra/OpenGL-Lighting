@@ -64,7 +64,7 @@ int main()
 	glfwSetWindowUserPointer(window, &camera);
 
 	// Shaders
-	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_textures_wnormals.frag");
+	Shader PBRShader("shaders/base_lit.vert", "shaders/pbr/pbr_ibl.frag");
 	Shader EQRToCubemap("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/eqr_to_cubemap.frag");
 	Shader Skybox("shaders/cubemapping/skybox.vert", "shaders/cubemapping/skybox.frag");
 	Shader IrradianceShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/irradiance_convolution.frag");
@@ -280,6 +280,9 @@ int main()
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		/*
+		
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
 		outputFrame.use();
 		outputFrame.setInt("hdrBuffer", 0);
@@ -288,10 +291,8 @@ int main()
 		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 		glBindVertexArray(frame);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		*/
 
-
-
-		/*
 		// PBR Sphere
 		PBRShader.use();
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
@@ -315,6 +316,13 @@ int main()
 		PBRShader.setInt("irradianceMap", 5);
 		glActiveTexture(GL_TEXTURE5);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceCubemap);
+		PBRShader.setInt("prefilterMap", 6);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+		PBRShader.setInt("brdfLUT", 7);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
+		
 
 		// light uniforms
 		for (int i = 0; i < 4; ++i)
@@ -334,14 +342,13 @@ int main()
 		view = glm::lookAt(cameraPos, cameraPos + camera.getCameraFront(), camera.getCameraUp());
 		Skybox.setMat4("view", glm::mat4(glm::mat3(view)));
 		glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, envCubemap);
+		// glBindTexture(GL_TEXTURE_CUBE_MAP, prefilterMap);
 		//glBindTexture(GL_TEXTURE_CUBE_MAP, irradianceCubemap);
 		glBindVertexArray(cube);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
 		glFrontFace(GL_CCW);
-		*/
 
 		// checks events and swap buffers
 		glfwPollEvents();
