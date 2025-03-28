@@ -267,7 +267,9 @@
     <None Include="shaders\pbr\pbr_ibl.frag" />
     <None Include="shaders\pbr\brdf.vert" />
     <None Include="shaders\pbr\brdf.frag" />
-    <None Include="shaders\debuger\framebuffer_out.frag" />
+    <None Include="shaders\debugger\framebuffer_out.frag" />
+    <None Include="shaders\debugger\mesh_debug.vert" />
+    <None Include="shaders\debugger\mesh_normals_debug.frag" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="resources\objects\backpack\source_attribution.txt" />

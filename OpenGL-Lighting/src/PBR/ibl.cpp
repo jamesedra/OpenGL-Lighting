@@ -274,11 +274,14 @@ int main()
 	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao, };
 	
 	// Debugger Section
-	Shader DebuggerFrame("shaders/post_process/framebuffer.vert", "shaders/debugger/framebuffer_output.frag");
-	Shader DebugOutputShader("", "");
-	unsigned int debugFrame = createDebugFrameVAO();
-	Texture DebugTexture(400, 300, GL_RGB, GL_RGB);
-	Framebuffer DebugFramebuffer(400, 300, DebugTexture, GL_COLOR_ATTACHMENT0);
+	Shader DebuggerFrame("shaders/post_process/framebuffer_quad.vert", "shaders/debugger/framebuffer_out.frag");
+	Shader DebugOutputShader("shaders/debugger/mesh_debug.vert", "shaders/debugger/mesh_normals_debug.frag");
+	
+	unsigned int debugFrameVAO = createDebugFrameVAO();
+
+	Texture DebugTexture(W_WIDTH, W_HEIGHT, GL_RGB, GL_RGB, GL_LINEAR, GL_CLAMP_TO_EDGE);
+	Framebuffer DebugFramebuffer(W_WIDTH, W_HEIGHT, DebugTexture, GL_COLOR_ATTACHMENT0);
+	DebugFramebuffer.attachRenderbuffer(GL_DEPTH_ATTACHMENT, GL_DEPTH_COMPONENT24);
 
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	// render loop
@@ -289,7 +292,7 @@ int main()
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		float time = glfwGetTime();
 		/*
 		
 		glViewport(0, 0, W_WIDTH, W_HEIGHT);
@@ -307,7 +310,6 @@ int main()
 		PBRShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
 		PBRShader.setMat4("view", camera.getViewMatrix());
 
-		float time = glfwGetTime();
 		PBRShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 		PBRShader.setVec3("viewPos", camera.getCameraPos());
 
@@ -332,7 +334,6 @@ int main()
 		glActiveTexture(GL_TEXTURE7);
 		glBindTexture(GL_TEXTURE_2D, brdfLUTTexture);
 		
-
 		// light uniforms
 		for (int i = 0; i < 4; ++i)
 		{
@@ -358,6 +359,25 @@ int main()
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 		glDepthFunc(GL_LESS);
 		glFrontFace(GL_CCW);
+
+		// Debugger caching
+		DebugFramebuffer.bind();
+		DebugOutputShader.use();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		DebugOutputShader.setMat4("projection", camera.getProjectionMatrix(W_WIDTH, W_HEIGHT, 0.1f, 1000.0f));
+		DebugOutputShader.setMat4("view", camera.getViewMatrix());
+		DebugOutputShader.setMat4("model", computeModelMatrix(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), fmod(time * 30.0f, 360.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
+		DebugOutputShader.setVec3("viewPos", camera.getCameraPos());
+		DebugOutputShader.setInt("normalMap", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, tex_normal);
+		glBindVertexArray(sphere);
+		glDrawElements(GL_TRIANGLES, indicesCount, GL_UNSIGNED_INT, 0);
+		DebugFramebuffer.unbind();
+
+		glDisable(GL_DEPTH_TEST);
+		DisplayFramebufferTexture(DebuggerFrame, debugFrameVAO, DebugTexture.id);
+		glEnable(GL_DEPTH_TEST);
 
 		// checks events and swap buffers
 		glfwPollEvents();
