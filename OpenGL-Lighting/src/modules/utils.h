@@ -7,6 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "../modules/shader.h"
 #include "../../stb/stb_image.h"
 #include "texture.h"
 
@@ -33,6 +34,7 @@ unsigned int createCubeVAO();
 unsigned int createSphereVAO(unsigned int& indicesCount, float radius = 1.0f, unsigned int sectorCount = 16, unsigned int stackCount = 16);
 unsigned int createQuadVAO();
 unsigned int createFrameVAO();
+unsigned int createDebugFrameVAO();
 
 // model matrix helper
 glm::mat4 computeModelMatrix(const glm::vec3& position, const glm::vec3& scale, float angleDegrees, const glm::vec3& rotationAxis);
@@ -44,3 +46,5 @@ glm::vec3 getVertexPosition(const float* vertices, int index);
 glm::vec2 getUVPosition(const float* vertices, int index);
 
 float lerp(float a, float b, float t);
+
+void DisplayFramebufferTexture(Shader shader, unsigned int frame, unsigned int textureID);

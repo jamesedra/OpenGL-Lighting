@@ -221,6 +221,7 @@
     <None Include="shaders\cubemapping\prefilter_cubemap.frag" />
     <None Include="shaders\cubemapping\skybox.frag" />
     <None Include="shaders\cubemapping\skybox.vert" />
+    <None Include="shaders\debuger\framebuffer_out.frag" />
     <None Include="shaders\deferred\def_basecolor.frag" />
     <None Include="shaders\deferred\def_gbf.frag" />
     <None Include="shaders\deferred\def_gbf_ssao.frag" />

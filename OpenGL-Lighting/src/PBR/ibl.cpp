@@ -70,7 +70,9 @@ int main()
 	Shader IrradianceShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/irradiance_convolution.frag");
 	Shader PrefilterShader("shaders/cubemapping/eqr_to_cubemap.vert", "shaders/cubemapping/prefilter_cubemap.frag");
 	Shader IntegratedBRDF("shaders/pbr/brdf.vert", "shaders/pbr/brdf.frag");
-	Shader outputFrame("shaders/post_process/framebuffer_quad.vert", "shaders/post_process/rh_tonemapping.frag");
+	Shader OutputFrame("shaders/post_process/framebuffer_quad.vert", "shaders/post_process/rh_tonemapping.frag");
+	
+
 	// Objects
 	unsigned int indicesCount;
 	unsigned int sphere = createSphereVAO(indicesCount, 1.0f, 64, 64);
@@ -270,6 +272,13 @@ int main()
 	};
 
 	std::vector<unsigned int> sphereTex = { tex_albedo, tex_normal, tex_metallic, tex_roughness, tex_ao, };
+	
+	// Debugger Section
+	Shader DebuggerFrame("shaders/post_process/framebuffer.vert", "shaders/debugger/framebuffer_output.frag");
+	Shader DebugOutputShader("", "");
+	unsigned int debugFrame = createDebugFrameVAO();
+	Texture DebugTexture(400, 300, GL_RGB, GL_RGB);
+	Framebuffer DebugFramebuffer(400, 300, DebugTexture, GL_COLOR_ATTACHMENT0);
 
 	glViewport(0, 0, W_WIDTH, W_HEIGHT);
 	// render loop

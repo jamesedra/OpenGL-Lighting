@@ -550,6 +550,39 @@ unsigned int createFrameVAO()
 	return quadVAO;
 }
 
+unsigned int createDebugFrameVAO()
+{
+	float vertices[] = {
+		// First triangle
+		0.7f, 1.0f,   0.0f, 1.0f,
+		0.7f, 0.7f,   0.0f, 0.0f,
+		1.0f, 1.0f,   1.0f, 1.0f,
+		// Second triangle
+		0.7f, 0.7f,   0.0f, 0.0f,
+		1.0f, 0.7f,   1.0f, 0.0f,
+		1.0f, 1.0f,   1.0f, 1.0f,
+	};
+
+	unsigned int debugVAO;
+	glGenVertexArrays(1, &debugVAO);
+
+	unsigned int debugVBO;
+	glGenBuffers(1, &debugVBO);
+	glBindBuffer(GL_ARRAY_BUFFER, debugVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glBindVertexArray(debugVAO);
+
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindVertexArray(0);
+
+	return debugVAO;
+}
+
 
 glm::mat4 computeModelMatrix(const glm::vec3& position, const glm::vec3& scale, float angleDegrees, const glm::vec3& rotationAxis)
 {
@@ -580,4 +613,13 @@ glm::vec2 getUVPosition(const float* vertices, int index) {
 float lerp(float a, float b, float t)
 {
 	return a + t * (b - a);
+}
+
+void DisplayFramebufferTexture(Shader shader, unsigned int frame, unsigned int textureID) {
+	shader.use();
+	shader.setInt("fboAttachment", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glBindVertexArray(frame);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 }
